@@ -1,0 +1,20 @@
+[project]
+name = "ai_tutor_chatbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.136.3", # FastAPI
+    "openai>=2.38.0", # OpenAI
+    "passlib>=1.7.4", # BCrype
+    "psycopg2-binary>=2.9.12", # PostgreSQL Driver
+    "pydantic>=2.13.4", # 요청/응답 DTO 검증
+    "python-dotenv>=1.2.2", # dot-env
+    "python-jose>=3.5.0", # 로그인 (JWT)
+    "python-multipart>=0.0.29",
+    "requests>=2.34.2", # API Request
+    "sqlalchemy>=2.0.49", # JPA(?)
+    "streamlit>=1.57.0",
+    "uvicorn>=0.47.0", # WAS Tomcat(?)
+]
