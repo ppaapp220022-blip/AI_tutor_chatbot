@@ -1,6 +1,10 @@
-def main():
-    print("Hello from uvtest!")
+from fastapi import FastAPI
+from app.backend.database import engine, Base
+import app.backend.model
+app = FastAPI()
+# 테이블 생성
+Base.metadata.create_all(bind=engine)
 
-
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def root():
+    return {"message": "Hello World"}

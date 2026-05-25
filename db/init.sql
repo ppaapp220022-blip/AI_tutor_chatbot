@@ -1,6 +1,8 @@
 CREATE DATABASE ai_tutor_chatbot;
 
+-- 유저 ENUM
 CREATE TYPE user_role AS ENUM ('USER', 'ADMIN');
+-- 채팅 ENUM
 CREATE TYPE message_role AS ENUM ('user', 'assistant');
 
 -- 유저
