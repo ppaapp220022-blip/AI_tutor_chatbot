@@ -10,3 +10,22 @@ wheels/
 .venv
 .env
 .upload
+
+# IDE
+.idea/          # PyCharm 설정 (추가)
+.vscode/        # VSCode 설정 (추가)
+
+# 환경변수
+*.env           # 추가
+.env.*          # .env.local, .env.prod 등 (추가)
+
+# OS
+.DS_Store       # Mac (추가)
+Thumbs.db       # Windows (추가)
+
+# 업로드 파일
+uploads/        # 추가
+
+# 로그
+*.log           # 추가
+logs/           # 추가
