@@ -15,10 +15,10 @@ class Users(Base):
     __tablename__ = 'users'
     __table_args__ = {'comment': '유저'}
 
-    id: int = Column(Integer, primary_key=True) # PK
+    id: int = Column(Integer, primary_key=True, autoincrement=True) # PK
     login_id: str = Column(String(30), unique=True, nullable=False, comment='로그인 아이디')
     password: str = Column(String(60), nullable=False, comment='비밀번호')
     email: str = Column(String(40), unique=True, nullable=False, comment='이메일')
     role: Role = Column(Enum(Role), nullable=False, default=Role.USER, comment='유저 or 관리자')
-    is_active: bool = Column(Boolean, nullable=False, default=True, comment='계정 활성화 여부')
-    created_at: datetime = Column(DateTime, nullable=False, default=lambda: datetime.now(KST), comment='생성일시')
+    is_active: bool = Column(Boolean, default=True, comment='계정 활성화 여부')
+    created_at: datetime = Column(DateTime, default=lambda: datetime.now(KST), comment='생성일시')
