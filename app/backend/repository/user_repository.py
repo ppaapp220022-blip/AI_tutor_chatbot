@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
+from typing import Optional
 
-from app.backend.model.users import Users
-from app.backend.model.users import Role
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from app.backend.model.users import Users, Role
 from loguru import logger
 
 
@@ -19,11 +20,11 @@ def create_users(db: Session, login_id: str, password: str, email: str) -> Users
     db.add(user)
     db.commit()
     db.refresh(user)  # DB에 최신 상태로 새로고침
-    logger.info(f'회원 등록 요청 - 아이디 : {user.login_id}, 이메일 : {user.email}')
+    logger.info(f'회원 등록 완료 - 아이디 : {user.login_id}, 이메일 : {user.email}')
     return user
 
 
-def find_user(db: Session, login_id: str) -> type[Users] | None:
+def find_user(db: Session, login_id: str) -> Optional[Users]:
     """
     유저 단건 조회
     :param db: 세션
@@ -31,7 +32,7 @@ def find_user(db: Session, login_id: str) -> type[Users] | None:
     :return: 회원
     """
     logger.info(f'유저 단건 조회 요청 : {login_id}')
-    user = db.query(Users).filter(Users.login_id == login_id).first()
+    user = db.execute(select(Users).where(Users.login_id == login_id)).scalar_one_or_none()
 
     if not user:
         logger.warning(f'조회 유저 없음 : {login_id}')
@@ -41,7 +42,7 @@ def find_user(db: Session, login_id: str) -> type[Users] | None:
     return user
 
 
-def update_user(db: Session, login_id: str, new_password: str, new_email: str) -> type[Users] | None:
+def update_user(db: Session, login_id: str, new_password: str, new_email: str) -> Optional[Users]:
     """
     회원 정보 업데이트
     :param db: DB 세션
@@ -50,7 +51,6 @@ def update_user(db: Session, login_id: str, new_password: str, new_email: str) -
     :param new_email: 변경할 이메일
     :return: 수정된 회원
     """
-
     logger.info(f'회원 정보 수정 요청 아이디 : {login_id}')
     user = find_user(db, login_id)
 
@@ -71,6 +71,12 @@ def update_user(db: Session, login_id: str, new_password: str, new_email: str) -
 
 
 def delete_user(db: Session, login_id: str) -> bool:
+    """
+    회원 삭제
+    :param db: DB 세션
+    :param login_id: 로그인 아이디
+    :return: 삭제 여부
+    """
     user = find_user(db, login_id)
     if not user:
         logger.warning('지정 회원 존재 하지 않음')
