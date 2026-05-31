@@ -22,3 +22,6 @@ class Users(Base):
     role: Role = Column(Enum(Role), nullable=False, default=Role.USER, comment='유저 or 관리자')
     is_active: bool = Column(Boolean, default=True, comment='계정 활성화 여부')
     created_at: datetime = Column(DateTime, default=lambda: datetime.now(KST), comment='생성일시')
+
+    # FK (부모)
+    chat_room = relationship('ChatRoom', back_populates='users')
