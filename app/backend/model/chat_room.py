@@ -16,7 +16,7 @@ class ChatRoom(Base):
     created_at: datetime = Column(DateTime, default=lambda: datetime.now(KST), comment='생성일시')
 
     # FK (부모)
-    massages = relationship('Massages', back_populates='chat_room')
+    messages = relationship('Messages', back_populates='chat_room')
     uploaded_files = relationship('UploadedFiles', back_populates='chat_room')
 
     # FK (자식)

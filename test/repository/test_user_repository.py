@@ -1,39 +1,134 @@
-from app.backend.repository.user_repository import create_users, find_user, update_user, delete_user
+from app.backend.model.users import Users, Role
+from app.backend.repository.user_repository import (
+    create_users, find_user_id, update_user, update_users_active, delete_user
+)
 
 
+# 테스트용 유저 생성 헬퍼
+def make_user(login_id='test', password='1234', email='test@test.com') -> Users:
+    return Users(login_id=login_id, password=password, email=email, role=Role.USER)
+
+
+# 회원가입
 def test_create_users(db):
-    login_id = 'user'
-    password = '1234'
-    email = 'user@example.com'
+    # given
+    user = make_user()
 
-    user = create_users(db, login_id, password, email)
+    # when
+    created = create_users(db, user)
 
-    assert user.id is not None
-    assert user.login_id == 'user'
-    assert user.password == '1234'
-    assert user.email == 'user@example.com'
+    # then
+    assert created.id is not None
+    assert created.login_id == 'test'
+    assert created.email == 'test@test.com'
+    assert created.role == Role.USER
+    assert created.is_active == True
 
-def test_find_users(db):
-    login_id = 'user'
-    password = '1234'
-    email = 'user@example.com'
-    create_users(db, login_id, password, email)
 
-    login_id = 'user'
-    find_user(db, login_id)
+# 단건 조회 - 존재하는 유저
+def test_find_user_id(db):
+    # given
+    create_users(db, make_user())
 
+    # when
+    user = find_user_id(db, 'test')
+
+    # then
+    assert user is not None
+    assert user.login_id == 'test'
+
+
+# 단건 조회 - 존재하지 않는 유저
+def test_find_user_id_not_found(db):
+    # when
+    user = find_user_id(db, '없는유저')
+
+    # then
+    assert user is None
+
+
+# 회원 정보 수정
 def test_update_user(db):
-    login_id = 'user'
-    password = '1234'
-    email = 'user@example.com'
-    create_users(db, login_id, password, email)
-    new_password = '1111'
-    new_email = 'user@naver.com'
-    update_user(db, login_id, new_password, new_email)
+    # given
+    create_users(db, make_user())
+    update_data = Users(login_id='test', password='new_password', email='new@test.com')
 
+    # when
+    updated = update_user(db, update_data)
+
+    # then
+    assert updated is not None
+    assert updated.password == 'new_password'
+    assert updated.email == 'new@test.com'
+
+
+# 회원 정보 수정 - 존재하지 않는 유저
+def test_update_user_not_found(db):
+    # given
+    update_data = Users(login_id='없는유저', password='1234', email='test@test.com')
+
+    # when
+    result = update_user(db, update_data)
+
+    # then
+    assert result is None
+
+
+# 활성화 상태 변경 - 단건
+def test_update_users_active_single(db):
+    # given
+    user = create_users(db, make_user())
+
+    # when
+    count = update_users_active(db, [user.id], False)
+
+    # then
+    assert count == 1
+    updated = find_user_id(db, 'test')
+    assert updated is not None
+    assert updated.is_active == False
+
+
+# 활성화 상태 변경 - 다건
+def test_update_users_active_multiple(db):
+    # given
+    user1 = create_users(db, make_user('test1', '1234', 'test1@test.com'))
+    user2 = create_users(db, make_user('test2', '1234', 'test2@test.com'))
+    user3 = create_users(db, make_user('test3', '1234', 'test3@test.com'))
+
+    # when
+    count = update_users_active(db, [user1.id, user2.id, user3.id], False)
+
+    # then
+    assert count == 3
+    user1_updated = find_user_id(db, 'test1')
+    user2_updated = find_user_id(db, 'test2')
+    user3_updated = find_user_id(db, 'test3')
+    assert user1_updated is not None
+    assert user2_updated is not None
+    assert user3_updated is not None
+    assert user1_updated.is_active == False
+    assert user2_updated.is_active == False
+    assert user3_updated.is_active == False
+
+
+# 회원 삭제
 def test_delete_user(db):
-    login_id = 'user'
-    password = '1234'
-    email = ''
-    create_users(db, login_id, password, email)
-    delete_user(db, login_id)
+    # given
+    create_users(db, make_user())
+
+    # when
+    result = delete_user(db, 'test')
+
+    # then
+    assert result == True
+    assert find_user_id(db, 'test') is None
+
+
+# 회원 삭제 - 존재하지 않는 유저
+def test_delete_user_not_found(db):
+    # when
+    result = delete_user(db, '없는유저')
+
+    # then
+    assert result == False

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.4",
+    "bcrypt==4.0.1",
     "fastapi>=0.136.3", # FastAPI
     "loguru>=0.7.3",
     "openai>=2.38.0", # OpenAI
@@ -16,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.2.2", # dot-env
     "python-jose>=3.5.0", # 로그인 (JWT)
     "python-multipart>=0.0.29",
+    "redis>=8.0.0",
     "requests>=2.34.2", # API Request
     "sqlalchemy>=2.0.49", # JPA(?)
     "streamlit>=1.57.0",

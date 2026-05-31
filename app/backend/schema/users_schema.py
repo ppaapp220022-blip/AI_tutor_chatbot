@@ -17,3 +17,8 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# 단건 / 여러건 활성화 여부 변경
+class UsersActiveRequest(BaseModel):
+    user_idx: list[int]
+    is_active: bool
