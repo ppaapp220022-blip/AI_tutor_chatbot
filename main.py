@@ -1,15 +1,14 @@
+from fastapi import FastAPI
+from app.backend.database import engine, Base
+from loguru import logger
 from dotenv import load_dotenv
+import app.backend.model
 import sys
 
 load_dotenv()
-
-from fastapi import FastAPI
-from loguru import logger
-
-import app.backend.model
-from app.backend.database import init_db
-
 app = FastAPI()
+# 테이블 생성
+Base.metadata.create_all(bind=engine)
 
 # 설정
 logger.remove()  # 기본 설정 제거
@@ -23,11 +22,6 @@ logger.add(
     retention="30 days",  # 30일치 보관
     level="DEBUG"
 )
-
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 @app.get("/")
 def root():
