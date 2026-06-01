@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.backend.database import engine, Base
 from loguru import logger
+from dotenv import load_dotenv
 import app.backend.model
 import sys
 
@@ -19,6 +20,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+load_dotenv()
 
 # 테이블 생성
 Base.metadata.create_all(bind=engine)

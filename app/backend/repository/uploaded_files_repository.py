@@ -16,7 +16,7 @@ def create_uploaded_files(db: Session, room_id: int, file_name: str, file_path: 
     logger.info(f"업로드 파일 생성 요청 - room_id: {room_id}, file_name: {file_name}, file_path: {file_path}")
     uploaded = UploadedFiles(room_id=room_id, file_name=file_name, file_path=file_path)
     db.add(uploaded)
-    db.commit()
+    db.flush()
     db.refresh(uploaded)
     logger.info(f"파일 업로드 완료 - id: {uploaded.id}, room_id: {uploaded.room_id}")
     return uploaded
@@ -80,7 +80,7 @@ def update_uploaded_files(db: Session, uploaded_id: int, new_file_name: str, new
     if new_file_path:
         uploaded.file_path = new_file_path
 
-    db.commit()
+    db.flush()
     db.refresh(uploaded)
     logger.info(f"업로드 파일 수정 완료 - "
                 f"id: {uploaded.id}, "
@@ -104,6 +104,6 @@ def delete_uploaded_files(db: Session, uploaded_id: int) -> bool:
         return False
 
     db.delete(uploaded)
-    db.commit()
+    db.flush()
     logger.info(f"업로드 파일 삭제 완료 - uploaded_id: {uploaded_id}")
     return True
