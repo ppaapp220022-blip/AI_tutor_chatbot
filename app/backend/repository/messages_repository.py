@@ -16,7 +16,7 @@ def create_messages(db: Session, room_id: int, role: Role, content: str) -> Mess
     logger.info(f"메시지 생성 요청 - room_id: {room_id}, role: {role}, content: {content}")
     messages = Messages(room_id=room_id, role=role, content=content)
     db.add(messages)
-    db.commit()
+    db.flush()
     db.refresh(messages)
     logger.info(f"메시지 생성 완료 - id: {messages.id}, room_id: {messages.room_id}")
     return messages
@@ -76,7 +76,7 @@ def update_messages(db: Session, messages_id: int, new_content: str) -> Messages
     if new_content:
         messages.content = new_content
 
-    db.commit()
+    db.flush()
     db.refresh(messages)
     logger.info(f"메시지 수정 완료 - id: {messages.id}, content: {messages.content}")
     return messages
@@ -97,6 +97,6 @@ def delete_messages(db: Session, messages_id: int) -> bool:
         return False
 
     db.delete(message)
-    db.commit()
+    db.flush()
     logger.info(f"메시지 삭제 완료 - message_id: {messages_id}")
     return True

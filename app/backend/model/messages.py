@@ -8,8 +8,8 @@ from app.backend.database import Base
 KST = timezone(timedelta(hours=9))
 
 class Role(enum.Enum):
-    USER = 'USER'
-    Assistant = 'ASSISTANT'
+    USER = 'user'
+    Assistant = 'assistant'
 
 class Messages(Base):
     __tablename__ = 'messages'
@@ -17,7 +17,11 @@ class Messages(Base):
 
     id: int = Column(Integer, primary_key=True, autoincrement=True, comment='메시지 고유 번호')
     room_id: int = Column(Integer, ForeignKey("chat_rooms.id"), nullable=True, comment='대화방 FK') # FK
-    role: Role = Column(Enum(Role), nullable=True, comment='user or assistant')
+    role: Role = Column(
+        Enum(Role, name="message_role", values_callable=lambda enum_cls: [item.value for item in enum_cls]),
+        nullable=True,
+        comment='user or assistant'
+    )
     content: str = Column(Text, nullable=True, comment='내용')
     created_at: datetime = Column(DateTime, default=lambda: datetime.now(KST), comment='메시지 전송 일시')
 

@@ -18,8 +18,8 @@ def create_users(db: Session, login_id: str, password: str, email: str) -> Users
     logger.info(f'회원 등록 요청 - 아이디 : {login_id}, 이메일 : {email}')
     user = Users(login_id=login_id, password=password, email=email, role=Role.USER)
     db.add(user)
-    db.commit()
-    db.refresh(user)  # DB에 최신 상태로 새로고침
+    db.flush()
+    db.refresh(user)
     logger.info(f'회원 등록 완료 - 아이디 : {user.login_id}, 이메일 : {user.email}')
     return user
 
@@ -63,7 +63,7 @@ def update_user(db: Session, login_id: str, new_password: str, new_email: str) -
     if new_email:
         user.email = new_email
 
-    db.commit()
+    db.flush()
     db.refresh(user)
 
     logger.info(f'회원 정보 수정 : {user.login_id}, {user.email}')
@@ -82,6 +82,6 @@ def delete_user(db: Session, login_id: str) -> bool:
         logger.warning('지정 회원 존재 하지 않음')
         return False
     db.delete(user)
-    db.commit()
+    db.flush()
     logger.info(f'{login_id} 회원 삭제 완료')
     return True

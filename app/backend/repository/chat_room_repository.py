@@ -18,7 +18,7 @@ def create_chat_room(db: Session, member_id: int, title: str, persona: str) -> C
     logger.info(f'대화방 생성 요청 - 회원 : {member_id}, 제목 : {title}')
     chat_room = ChatRoom(member_id=member_id, title=title, persona=persona)
     db.add(chat_room)
-    db.commit()
+    db.flush()
     db.refresh(chat_room)
     logger.info(f'대화방 생성 완료 : {chat_room.member_id}, {chat_room.title}, {chat_room.persona}')
     return chat_room
@@ -62,7 +62,7 @@ def update_chat_room(db: Session, chat_room_id: int, chat_room: ChatRoom) -> Opt
     if chat_room.persona:
         room.persona = chat_room.persona
 
-    db.commit()
+    db.flush()
     db.refresh(room)
     logger.info(f'채팅방 수정 완료 - 제목 : {room.title}, 페르소나 : {room.persona}')
     return room
@@ -80,6 +80,6 @@ def delete_chat_room(db: Session, chat_room_id: int) -> bool:
         logger.warning('삭제할 대화방 없음')
         return False
     db.delete(room)
-    db.commit()
+    db.flush()
     logger.info(f'삭제 완료 - {room.member_id}, {room.title}, {room.persona}')
     return True

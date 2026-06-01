@@ -19,6 +19,9 @@ wheels/
 *.env
 .env.*
 
+# md 하네스
+#*.md
+
 # OS
 .DS_Store
 Thumbs.db

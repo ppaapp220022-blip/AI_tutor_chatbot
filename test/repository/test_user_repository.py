@@ -19,8 +19,9 @@ def test_find_users(db):
     email = 'user@example.com'
     create_users(db, login_id, password, email)
 
-    login_id = 'user'
-    find_user(db, login_id)
+    found = find_user(db, login_id)
+    assert found is not None
+    assert found.login_id == login_id
 
 def test_update_user(db):
     login_id = 'user'
@@ -29,11 +30,15 @@ def test_update_user(db):
     create_users(db, login_id, password, email)
     new_password = '1111'
     new_email = 'user@naver.com'
-    update_user(db, login_id, new_password, new_email)
+    updated = update_user(db, login_id, new_password, new_email)
+    assert updated is not None
+    assert updated.password == new_password
+    assert updated.email == new_email
 
 def test_delete_user(db):
     login_id = 'user'
     password = '1234'
-    email = ''
+    email = 'user@example.com'
     create_users(db, login_id, password, email)
-    delete_user(db, login_id)
+    assert delete_user(db, login_id) is True
+    assert find_user(db, login_id) is None
