@@ -1,10 +1,25 @@
+import subprocess
+
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from app.backend.database import engine, Base
 from loguru import logger
 import app.backend.model
 import sys
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # streamlit 같이 실행
+    subprocess.Popen([
+        sys.executable, "-m", "streamlit", "run",
+        "app/frontend/main.py",
+        "--server.port=8501"
+    ])
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
 # 테이블 생성
 Base.metadata.create_all(bind=engine)
 

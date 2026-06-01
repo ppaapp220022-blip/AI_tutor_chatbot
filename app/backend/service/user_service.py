@@ -26,16 +26,15 @@ def add_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
     :param user: 유저 정보
     :return: 회원
     """
-    # 중복 체크
+    logger.info(f'회원가입 요청 : {user}')  # password 자동 제외
     exist_user = find_user_id(db, user.login_id)
     if exist_user:
         raise ValueError('이미 존재 하는 아이디 입니다.')
 
-    # 암호화 후 저장
     password = pwd_encoding.hash(user.password)
     model_user = Users(login_id=user.login_id, password=password, email=user.email)
     created_user = create_users(db, model_user)
-    logger.info('회원가입 완료')
+    logger.info(f'회원가입 완료 : {UserResponse.model_validate(created_user)}')
     return UserResponse.model_validate(created_user)
 
 
@@ -79,25 +78,23 @@ def modify_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
     :param user: 수정 유저 정보
     :return: 수정된 유저 정보
     """
-    # 존재 여부 검증
+    logger.info(f'회원 정보 수정 요청 : {user}')  # password 자동 제외
     exist_user = find_user_id(db, user.login_id)
     if not exist_user:
         logger.warning(f'존재하지 않는 회원 : {user.login_id}')
         raise ValueError(f'없는 회원 수정불가 : {user.login_id}')
 
-    # 동일 비밀번호 검증
     if pwd_encoding.verify(user.password, exist_user.password):
         logger.warning(f'현재 비밀번호와 겹침 : {user.login_id}')
         raise ValueError('현재 비밀번호랑 겹침 변경 불가')
 
-    # 동일 이메일 검증
     if exist_user.email == user.email:
         logger.warning(f'현재 이메일과 동일 : {user.email}')
         raise ValueError('현재 이메일과 동일함 변경 불가')
 
-    # 암호화 후 수정 위임
     new_password = pwd_encoding.hash(user.password)
     updated = update_user(db, user.login_id, new_password, user.email)
+    logger.info(f'회원 정보 수정 완료 : {UserResponse.model_validate(updated)}')
     return UserResponse.model_validate(updated)
 
 
@@ -108,14 +105,13 @@ def modify_active_user(db: Session, user: UsersActiveRequest) -> int:
     :param user: 변경할 회원과 상태
     :return: 변경된 회원수
     """
-    # 변경이 필요한 회원만 조회
+    logger.info(f'회원 상태 변경 요청 : {user}')
     target_users = find_users_by_ids_and_active(db, user.user_idx, user.is_active)
 
     if not target_users:
         logger.warning('모든 회원이 이미 동일한 상태입니다')
         raise ValueError('모든 회원이 이미 동일한 상태입니다')
 
-    # 변경 대상 ID 추출 후 DB 작업 위임
     target_ids = [u.id for u in target_users]
     count = update_users_active(db, target_ids, user.is_active)
     logger.info(f'활성화 상태 변경 완료 - {count}명')

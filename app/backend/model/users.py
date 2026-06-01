@@ -7,9 +7,11 @@ from app.backend.database import Base
 # UTC 기준 한국시간으로 지정
 KST = timezone(timedelta(hours=9))
 
+
 class Role(enum.Enum):
     USER = 'USER'
     ADMIN = 'ADMIN'
+
 
 class Users(Base):
     __tablename__ = 'users'
@@ -25,3 +27,9 @@ class Users(Base):
 
     # FK (부모)
     chat_room = relationship('ChatRoom', back_populates='users')
+
+    def __str__(self):
+        # password 제외하고 출력
+        return (f'Users(id={self.id}, login_id={self.login_id}, '
+                f'email={self.email}, role={self.role}, '
+                f'is_active={self.is_active}, created_at={self.created_at})')

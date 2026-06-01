@@ -13,12 +13,12 @@ def create_users(db: Session, user: Users) -> Users:
     :param user: 회원 정보
     :return: 회원
     """
-    logger.info(f'회원 등록 요청 - 아이디 : {user.login_id}, 이메일 : {user.email}')
+    logger.info(f'회원 등록 요청 : {user}')
     user = Users(login_id=user.login_id, password=user.password, email=user.email, role=Role.USER)
     db.add(user)
     db.commit()
     db.refresh(user)
-    logger.info(f'회원 등록 완료 - 아이디 : {user.login_id}, 이메일 : {user.email}')
+    logger.info(f'회원 등록 완료 : {user}')
     return user
 
 
@@ -35,7 +35,7 @@ def find_user_id(db: Session, login_id: str) -> Optional[Users]:
     if not user:
         logger.warning(f'조회 유저 없음 : {login_id}')
         return None
-    logger.info(f'유저 단건 조회 : {user.login_id}, {user.email}, {user.role}')
+    logger.info(f'유저 단건 조회 완료 : {user}')
     return user
 
 
@@ -52,7 +52,7 @@ def find_users_by_ids_and_active(db: Session, user_ids: list[int], is_active: bo
         .where(Users.id.in_(user_ids))
         .where(Users.is_active != is_active)
     ).scalars().all()
-    logger.info(f'변경 대상 회원 조회 완료 : {len(users)}명')
+    logger.info(f'변경 대상 회원 조회 완료 : {len(users)}명 → {[str(u) for u in users]}')
     return list(users)
 
 
@@ -76,7 +76,7 @@ def update_user(db: Session, login_id: str, password: str, email: str) -> Option
     user.email = email
     db.commit()
     db.refresh(user)
-    logger.info(f'회원 정보 수정 완료 : {user.login_id}, {user.email}')
+    logger.info(f'회원 정보 수정 완료 : {user}')
     return user
 
 
@@ -91,7 +91,7 @@ def update_users_active(db: Session, user_ids: list[int], is_active: bool) -> in
     count = len(user_ids)
     db.execute(update(Users).where(Users.id.in_(user_ids)).values(is_active=is_active))
     db.commit()
-    logger.info(f'활성화 여부 변경 완료 : {user_ids}, {is_active}')
+    logger.info(f'활성화 여부 변경 완료 : ids={user_ids}, is_active={is_active}, count={count}')
     return count
 
 
@@ -108,5 +108,5 @@ def delete_user(db: Session, login_id: str) -> bool:
         return False
     db.delete(user)
     db.commit()
-    logger.info(f'{login_id} 회원 삭제 완료')
+    logger.info(f'회원 삭제 완료 : {user}')
     return True
