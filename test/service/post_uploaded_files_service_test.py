@@ -1,12 +1,18 @@
 from io import BytesIO
 from pathlib import Path
 
+from app.backend.model.users import Users, Role
 from app.backend.service.uploaded_files_service import post_uploaded_files_service, save_upload_file_service
 from app.backend.service.chat_room_service import post_chat_room_service
 from app.backend.repository.user_repository import create_users
 
+
+def make_user(login_id: str, password: str, email: str) -> Users:
+    return Users(login_id=login_id, password=password, email=email, role=Role.USER)
+
+
 def test_post_uploaded_files_service(db):
-    user = create_users(db, 'user1', '1234', 'user1@example.com')
+    user = create_users(db, make_user('user1', '1234', 'user1@example.com'))
     room = post_chat_room_service(db, user.id, 'test', 'test persona')
 
     file_name = 'test.pdf'
@@ -18,13 +24,15 @@ def test_post_uploaded_files_service(db):
     assert upload.file_name == 'test.pdf'
     assert upload.file_path == r'C:\dev'
 
+
 class DummyUploadFile:
     def __init__(self, filename: str, content: bytes):
         self.filename = filename
         self.file = BytesIO(content)
 
+
 def test_save_upload_file_service(db):
-    user = create_users(db, 'user1', '1234', 'user1@example.com')
+    user = create_users(db, make_user('user1', '1234', 'user1@example.com'))
     room = post_chat_room_service(db, user.id, 'test', 'test persona')
 
     dummy_file = DummyUploadFile("test.pdf", b"%PDF-1.4 test content")

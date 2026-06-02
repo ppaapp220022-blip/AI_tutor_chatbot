@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from app.backend.model.users import Role
 from app.backend.schema.base_schema import BaseSchema
 
@@ -15,14 +16,13 @@ class UserRequest(BaseSchema):
 
 # 응답 (password 제외)
 class UserResponse(BaseSchema):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     login_id: str
     email: str
     role: Role
     is_active: bool
-
-    class Config:
-        from_attributes = True
 
 
 # 단건 / 여러건 활성화 여부 변경

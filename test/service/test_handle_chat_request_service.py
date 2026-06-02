@@ -2,11 +2,16 @@ from io import BytesIO
 
 import pytest
 
+from app.backend.model.users import Users, Role
 from app.backend.repository.messages_repository import list_messages_by_room
 from app.backend.repository.uploaded_files_repository import list_uploaded_files
 from app.backend.repository.user_repository import create_users
 from app.backend.service.ai_chat_service import handle_chat_request_service
 from app.backend.service.chat_room_service import post_chat_room_service
+
+
+def make_user(login_id: str, password: str, email: str) -> Users:
+    return Users(login_id=login_id, password=password, email=email, role=Role.USER)
 
 
 class DummyUploadFile:
@@ -16,7 +21,7 @@ class DummyUploadFile:
 
 
 def test_handle_chat_request_service_without_real_pdf(db, monkeypatch):
-    user = create_users(db, "user1", "1234", "user1@example.com")
+    user = create_users(db, make_user("user1", "1234", "user1@example.com"))
     room = post_chat_room_service(db, user.id, "test", "test persona")
 
     dummy_file = DummyUploadFile("fake.pdf", b"not a real pdf")
@@ -53,7 +58,7 @@ def test_handle_chat_request_service_without_real_pdf(db, monkeypatch):
 
 
 def test_handle_chat_request_service_rolls_back_when_ai_fails(db, monkeypatch, upload_dir):
-    user = create_users(db, "user1", "1234", "user1@example.com")
+    user = create_users(db, make_user("user1", "1234", "user1@example.com"))
     room = post_chat_room_service(db, user.id, "test", "test persona")
 
     dummy_file = DummyUploadFile("fake.pdf", b"not a real pdf")

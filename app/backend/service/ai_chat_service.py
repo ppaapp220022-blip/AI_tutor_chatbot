@@ -1,5 +1,14 @@
 from pathlib import Path
+from typing import Literal
 
+from openai.types.chat import (
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+)
+
+from app.backend.model.messages import Messages
 from app.backend.model.messages import Role
 from app.backend.repository.chat_room_repository import find_chat_room
 from app.backend.service.ai_client_service import request_chat_completion
@@ -21,34 +30,47 @@ MAX_FILE_CONTEXT_LENGTH = 12000
 MAX_HISTORY_COUNT = 20
 
 
-def _to_openai_role(role: Role) -> str:
+def _to_openai_role(role: Role) -> Literal["user", "assistant"]: # 반환값은 user, assistent 만 가질 수 있도록 명시
     if role == Role.USER:
         return "user"
     return "assistant"
 
 
-def build_openai_messages(history, user_message: str, file_text: str = "") -> list[dict]:
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT}
-    ]
+def build_openai_messages(history: list[Messages], user_message: str, file_text: str = "") -> list[ChatCompletionMessageParam]: # OpenAI에서 채팅타입을 명시 해줌
+    messages: list[ChatCompletionMessageParam] = []
+
+    system_message: ChatCompletionSystemMessageParam = {
+        "role": "system",
+        "content": SYSTEM_PROMPT,
+    }
+    messages.append(system_message)
 
     if file_text:
-        messages.append(
-            {
-                "role": "system",
-                "content": f"[업로드된 PDF 문서 내용]\n{file_text[:MAX_FILE_CONTEXT_LENGTH]}",
-            }
-        )
+        file_message: ChatCompletionSystemMessageParam = {
+            "role": "system",
+            "content": f"[업로드된 PDF 문서 내용]\n{file_text[:MAX_FILE_CONTEXT_LENGTH]}",
+        }
+        messages.append(file_message)
 
     for history_message in history[-MAX_HISTORY_COUNT:]:
-        messages.append(
-            {
-                "role": _to_openai_role(history_message.role),
+        if _to_openai_role(history_message.role) == "user":
+            user_chat_message: ChatCompletionUserMessageParam = {
+                "role": "user",
                 "content": history_message.content,
             }
-        )
+            messages.append(user_chat_message)
+        else:
+            assistant_chat_message: ChatCompletionAssistantMessageParam = {
+                "role": "assistant",
+                "content": history_message.content,
+            }
+            messages.append(assistant_chat_message)
 
-    messages.append({"role": "user", "content": user_message})
+    user_message_param: ChatCompletionUserMessageParam = {
+        "role": "user",
+        "content": user_message,
+    }
+    messages.append(user_message_param)
     return messages
 
 

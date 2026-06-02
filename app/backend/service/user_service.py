@@ -93,7 +93,9 @@ def modify_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
         raise ValueError('현재 이메일과 동일함 변경 불가')
 
     new_password = pwd_encoding.hash(user.password)
-    updated = update_user(db, user.login_id, new_password, user.email)
+    # Users 객체로 변환해서 update_user 호출
+    update_data = Users(login_id=user.login_id, password=new_password, email=user.email)
+    updated = update_user(db, update_data)
     logger.info(f'회원 정보 수정 완료 : {UserResponse.model_validate(updated)}')
     return UserResponse.model_validate(updated)
 

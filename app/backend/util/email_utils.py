@@ -7,15 +7,19 @@ from loguru import logger
 
 load_dotenv()
 
-NAVER_EMAIL = os.getenv("NAVER_EMAIL")
-NAVER_PASSWORD = os.getenv("NAVER_PASSWORD")
+NAVER_EMAIL: str = os.getenv("NAVER_EMAIL") or ''
+NAVER_PASSWORD: str = os.getenv("NAVER_PASSWORD") or ''
 
-def send_email(to_email: str, code: str):
+
+def send_email(to_email: str, code: str) -> None:
     """
     OTP 인증번호 메일 발송
     :param to_email: 보낼 이메일
     :param code: OTP 코드
     """
+    if not NAVER_EMAIL or not NAVER_PASSWORD:
+        raise ValueError("NAVER_EMAIL 또는 NAVER_PASSWORD 환경변수가 설정되지 않았습니다")
+
     try:
         msg = MIMEMultipart()
         msg["From"] = NAVER_EMAIL

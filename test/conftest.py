@@ -1,4 +1,6 @@
 import pytest
+from pathlib import Path
+import shutil
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.backend.database import Base
@@ -18,3 +20,24 @@ def db():
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine) # 테스트 끝나면 테이블 삭제
+
+
+@pytest.fixture
+def upload_dir():
+    upload_path = Path("uploads")
+    upload_path.mkdir(parents=True, exist_ok=True)
+
+    for child in upload_path.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+    try:
+        yield upload_path
+    finally:
+        for child in upload_path.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()

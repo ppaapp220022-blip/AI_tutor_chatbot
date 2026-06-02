@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 from loguru import logger
@@ -6,11 +6,14 @@ import os
 
 load_dotenv()
 
-# JWT 설정
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-JWT_ALGORITHM = os.getenv('JWT_ALGORITHM')
-JWT_ACCESS_EXPIRE_MINUTES = os.getenv('JWT_ACCESS_EXPIRE_MINUTES')
-JWT_REFRESH_EXPIRE_DAYS = os.getenv('JWT_REFRESH_EXPIRE_DAYS')
+JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY') or ''
+JWT_ALGORITHM: str = os.getenv('JWT_ALGORITHM') or 'HS256'
+JWT_ACCESS_EXPIRE_MINUTES: int = int(os.getenv('JWT_ACCESS_EXPIRE_MINUTES') or '30')
+JWT_REFRESH_EXPIRE_DAYS: int = int(os.getenv('JWT_REFRESH_EXPIRE_DAYS') or '7')
+
+if not JWT_SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY 환경변수가 설정되지 않았습니다")
+
 
 def create_access_token(login_id: str) -> str:
     """
@@ -18,10 +21,10 @@ def create_access_token(login_id: str) -> str:
     :param login_id: 회원 아이디
     :return: 엑세스토큰
     """
-    expire = datetime.utcnow() + timedelta(minutes=int(JWT_ACCESS_EXPIRE_MINUTES))
-    date = {"sub" : login_id, "type" : "access", "exp" : expire}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_ACCESS_EXPIRE_MINUTES)
+    date = {"sub": login_id, "type": "access", "exp": expire}
     token = jwt.encode(date, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    logger.info(f'엑세스 토큰 생성 : {login_id}, Token : {token}, 만료 : {date}')
+    logger.info(f'엑세스 토큰 생성 : {login_id}')
     return token
 
 
@@ -31,10 +34,10 @@ def create_refresh_token(login_id: str) -> str:
     :param login_id: 회원 아이디
     :return: 리프레시토큰
     """
-    expire = datetime.utcnow() + timedelta(days=int(JWT_REFRESH_EXPIRE_DAYS))
-    date = {"sub" : login_id, "type" : "refresh", "exp" : expire}
+    expire = datetime.now(timezone.utc) + timedelta(days=JWT_REFRESH_EXPIRE_DAYS)
+    date = {"sub": login_id, "type": "refresh", "exp": expire}
     token = jwt.encode(date, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    logger.info(f'리프레시 토큰 생성 : {login_id}, Token : {token}, 만료 : {date}')
+    logger.info(f'리프레시 토큰 생성 : {login_id}')
     return token
 
 
@@ -46,7 +49,7 @@ def decode_token(token: str) -> str:
     """
     try:
         payload: dict = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        login_id: str = payload.get("sub")
+        login_id: str = payload.get("sub") or ''
         if not login_id:
             raise ValueError('유효하지 않은 토큰입니다.')
         return login_id

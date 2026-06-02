@@ -1,12 +1,16 @@
 from app.backend.repository.chat_room_repository import create_chat_room, find_chat_room, update_chat_room, delete_chat_room
 from app.backend.model.chat_room import ChatRoom
+from app.backend.model.users import Users, Role
 from app.backend.repository.user_repository import create_users
-import pytest
+
+
+# 헬퍼 함수
+def make_user(login_id: str = 'test', password: str = '1234', email: str = 'test@test.com') -> Users:
+    return Users(login_id=login_id, password=password, email=email, role=Role.USER)
+
 
 def test_create_chat_room(db):
-    user = create_users(db, 1, 1234, 'test@test.com')
-    title = 'test'
-    persona = 'test persona'
+    user = create_users(db, make_user('user1', '1234', 'test1@test.com'))
     title = 'test'
     persona = 'test persona'
     create_chat_room(db, user.id, title, persona)
@@ -14,15 +18,17 @@ def test_create_chat_room(db):
     assert title == 'test'
     assert persona == 'test persona'
 
+
 def test_find_chat_room(db):
-    user = create_users(db, 2, 1234, 'test@test.com')
+    user = create_users(db, make_user('user2', '1234', 'test2@test.com'))
     title = 'test'
     persona = 'test persona'
     room = create_chat_room(db, user.id, title, persona)
-    find_chat_room(db, room.member_id)
+    find_chat_room(db, room.id)
+
 
 def test_update_chat_room(db):
-    user = create_users(db, 3, 1234, 'test@test.com')
+    user = create_users(db, make_user('user3', '1234', 'test3@test.com'))
     title = 'test'
     persona = 'test persona'
     room = create_chat_room(db, user.id, title, persona)
@@ -32,8 +38,9 @@ def test_update_chat_room(db):
     update_room.persona = 'test1 persona'
     update_chat_room(db, room.id, update_room)
 
+
 def test_delete_chat_room(db):
-    user = create_users(db, 4, 1234, 'test@test.com')
+    user = create_users(db, make_user('user4', '1234', 'test4@test.com'))
     title = 'test'
     persona = 'test persona'
     room = create_chat_room(db, user.id, title, persona)

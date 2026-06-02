@@ -135,18 +135,24 @@ else:
 
     selected_ids = []
 
+    # 헤더 - E701 수정
     col1, col2, col3, col4, col5 = st.columns([1, 2, 3, 2, 1])
-    with col1: st.write('**선택**')
-    with col2: st.write('**아이디**')
-    with col3: st.write('**이메일**')
-    with col4: st.write('**상태**')
-    with col5: st.write('**상세**')
+    with col1:
+        st.write('**선택**')
+    with col2:
+        st.write('**아이디**')
+    with col3:
+        st.write('**이메일**')
+    with col4:
+        st.write('**상태**')
+    with col5:
+        st.write('**상세**')
     st.divider()
 
     for user in st.session_state['users']:
         col1, col2, col3, col4, col5 = st.columns([1, 2, 3, 2, 1])
         with col1:
-            checked = st.checkbox('', key=f"check_{user['id']}")
+            checked = st.checkbox(' ', key=f"check_{user['id']}")
             if checked:
                 selected_ids.append(user['id'])
         with col2:

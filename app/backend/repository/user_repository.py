@@ -1,5 +1,4 @@
 from typing import Optional
-
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from app.backend.model.users import Users, Role
@@ -14,12 +13,12 @@ def create_users(db: Session, user: Users) -> Users:
     :return: 회원
     """
     logger.info(f'회원 등록 요청 : {user}')
-    user = Users(login_id=user.login_id, password=user.password, email=user.email, role=Role.USER)
-    db.add(user)
+    new_user = Users(login_id=user.login_id, password=user.password, email=user.email, role=Role.USER)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    logger.info(f'회원 등록 완료 : {user}')
-    return user
+    db.refresh(new_user)
+    logger.info(f'회원 등록 완료 : {new_user}')
+    return new_user
 
 
 def find_user_id(db: Session, login_id: str) -> Optional[Users]:
@@ -31,7 +30,6 @@ def find_user_id(db: Session, login_id: str) -> Optional[Users]:
     """
     logger.info(f'유저 단건 조회 요청 : {login_id}')
     user = db.execute(select(Users).where(Users.login_id == login_id)).scalar_one_or_none()
-
     if not user:
         logger.warning(f'조회 유저 없음 : {login_id}')
         return None
@@ -52,32 +50,33 @@ def find_users_by_ids_and_active(db: Session, user_ids: list[int], is_active: bo
         .where(Users.id.in_(user_ids))
         .where(Users.is_active != is_active)
     ).scalars().all()
-    logger.info(f'변경 대상 회원 조회 완료 : {len(users)}명 → {[str(u) for u in users]}')
+    logger.info(f'변경 대상 회원 조회 완료 : {len(users)}명')
     return list(users)
 
 
-def update_user(db: Session, login_id: str, password: str, email: str) -> Optional[Users]:
+def update_user(db: Session, user: Users) -> Optional[Users]:
     """
-    회원 정보 업데이트 (DB 작업만)
+    회원 정보 업데이트
     :param db: DB 세션
-    :param login_id: 로그인 아이디
-    :param password: 변경할 비밀번호
-    :param email: 변경할 이메일
+    :param user: 수정할 회원 정보 (Users 객체)
     :return: 수정된 회원
     """
-    logger.info(f'회원 정보 수정 요청 아이디 : {login_id}')
-    user = find_user_id(db, login_id)
+    logger.info(f'회원 정보 수정 요청 아이디 : {user.login_id}')
+    exist_user = find_user_id(db, user.login_id)
 
-    if not user:
+    if not exist_user:
         logger.warning('지정 회원 존재 하지 않음')
         return None
 
-    user.password = password
-    user.email = email
+    if user.password:
+        exist_user.password = user.password
+    if user.email:
+        exist_user.email = user.email
+
     db.commit()
-    db.refresh(user)
-    logger.info(f'회원 정보 수정 완료 : {user}')
-    return user
+    db.refresh(exist_user)
+    logger.info(f'회원 정보 수정 완료 : {exist_user}')
+    return exist_user
 
 
 def update_users_active(db: Session, user_ids: list[int], is_active: bool) -> int:

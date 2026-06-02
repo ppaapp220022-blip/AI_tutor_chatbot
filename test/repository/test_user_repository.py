@@ -22,7 +22,7 @@ def test_create_users(db):
     assert created.login_id == 'test'
     assert created.email == 'test@test.com'
     assert created.role == Role.USER
-    assert created.is_active == True
+    assert created.is_active
 
 
 # 단건 조회 - 존재하는 유저
@@ -86,7 +86,7 @@ def test_update_users_active_single(db):
     assert count == 1
     updated = find_user_id(db, 'test')
     assert updated is not None
-    assert updated.is_active == False
+    assert not updated.is_active
 
 
 # 활성화 상태 변경 - 다건
@@ -107,9 +107,9 @@ def test_update_users_active_multiple(db):
     assert user1_updated is not None
     assert user2_updated is not None
     assert user3_updated is not None
-    assert user1_updated.is_active == False
-    assert user2_updated.is_active == False
-    assert user3_updated.is_active == False
+    assert not user1_updated.is_active
+    assert not user2_updated.is_active
+    assert not user3_updated.is_active
 
 
 # 회원 삭제
@@ -121,7 +121,7 @@ def test_delete_user(db):
     result = delete_user(db, 'test')
 
     # then
-    assert result == True
+    assert result
     assert find_user_id(db, 'test') is None
 
 
@@ -131,4 +131,4 @@ def test_delete_user_not_found(db):
     result = delete_user(db, '없는유저')
 
     # then
-    assert result == False
+    assert not result

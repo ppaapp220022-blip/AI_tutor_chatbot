@@ -27,7 +27,7 @@ def test_add_user(db):
     assert user is not None
     assert user.login_id == 'test'
     assert user.email == 'test@test.com'
-    assert user.is_active == True
+    assert user.is_active
 
 
 # 회원가입 - 중복 아이디
@@ -112,7 +112,7 @@ def test_modify_active_user_single(db):
     assert count == 1
     updated = find_user_id(db, 'test')
     assert updated is not None
-    assert updated.is_active == False
+    assert not updated.is_active
 
 
 # 활성화 상태 변경 - 다건
@@ -131,5 +131,5 @@ def test_modify_active_user_multiple(db):
     user2_updated = find_user_id(db, 'test2')
     assert user1_updated is not None
     assert user2_updated is not None
-    assert user1_updated.is_active == False
-    assert user2_updated.is_active == False
+    assert not user1_updated.is_active
+    assert not user2_updated.is_active
