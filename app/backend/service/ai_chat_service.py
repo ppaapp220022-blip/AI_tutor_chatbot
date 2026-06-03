@@ -1,20 +1,28 @@
 from pathlib import Path
 from typing import Literal
 
+from openai import OpenAIError
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageParam,
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
+from app.backend.exception import (
+    BadRequestException,
+    DatabaseException,
+    ExternalServiceException,
+    NotFoundException,
+)
 from app.backend.model.messages import Messages
 from app.backend.model.messages import Role
 from app.backend.repository.chat_room_repository import find_chat_room
 from app.backend.service.ai_client_service import request_chat_completion
 from app.backend.service.file_parser_service import extract_text_from_file
 from app.backend.service.messages_service import (
-    get_all_messages_service,
+    get_message_history_service,
     post_messages_service,
 )
 from app.backend.service.uploaded_files_service import save_upload_file_service
@@ -29,14 +37,41 @@ SYSTEM_PROMPT = (
 MAX_FILE_CONTEXT_LENGTH = 12000
 MAX_HISTORY_COUNT = 20
 
+def _cleanup_uploaded_file(uploaded) -> None:
+    """
+    업로드 실패 시 저장된 파일과 빈 부모 폴더를 정리
+    :param uploaded: 저장된 업로드 파일 정보
+    :return: 없음
+    """
+    if not uploaded or not uploaded.file_path:
+        return
+
+    uploaded_path = Path(uploaded.file_path)
+    if uploaded_path.exists():
+        uploaded_path.unlink()
+
+    parent_dir = uploaded_path.parent
+    if parent_dir.exists() and not any(parent_dir.iterdir()):
+        parent_dir.rmdir()
 
 def _to_openai_role(role: Role) -> Literal["user", "assistant"]: # 반환값은 user, assistent 만 가질 수 있도록 명시
+    """
+    메시지 역할을 OpenAI 역할 형식으로 변환
+    :param role: 메시지 역할
+    :return: OpenAI 역할 문자열
+    """
     if role == Role.USER:
         return "user"
     return "assistant"
 
-
 def build_openai_messages(history: list[Messages], user_message: str, file_text: str = "") -> list[ChatCompletionMessageParam]: # OpenAI에서 채팅타입을 명시 해줌
+    """
+    OpenAI 요청용 메시지 배열 생성
+    :param history: 기존 대화 이력
+    :param user_message: 현재 사용자 메시지
+    :param file_text: 업로드 파일 텍스트
+    :return: OpenAI 요청 메시지 목록
+    """
     messages: list[ChatCompletionMessageParam] = []
 
     system_message: ChatCompletionSystemMessageParam = {
@@ -73,17 +108,24 @@ def build_openai_messages(history: list[Messages], user_message: str, file_text:
     messages.append(user_message_param)
     return messages
 
-
 def handle_chat_request_service(db, room_id: int, user_message: str, upload_file=None) -> dict:
+    """
+    채팅 요청 처리 서비스
+    :param db: 세션
+    :param room_id: 대화방 PK
+    :param user_message: 사용자 메시지
+    :param upload_file: 업로드 파일
+    :return: AI 응답 결과
+    """
     if not room_id:
-        raise ValueError("채팅방을 확인할 수 없습니다.")
+        raise BadRequestException("채팅방을 확인할 수 없습니다.")
 
     if not user_message or not user_message.strip():
-        raise ValueError("사용자 메시지가 비어 있습니다.")
+        raise BadRequestException("사용자 메시지가 비어 있습니다.")
 
     room = find_chat_room(db, room_id)
     if not room:
-        raise ValueError("채팅방이 존재하지 않습니다.")
+        raise NotFoundException("채팅방이 존재하지 않습니다.")
 
     uploaded = None
     file_text = ""
@@ -91,9 +133,12 @@ def handle_chat_request_service(db, room_id: int, user_message: str, upload_file
     try:
         if upload_file is not None:
             uploaded = save_upload_file_service(db, room_id, upload_file, commit=False)
-            file_text = extract_text_from_file(uploaded.file_path)
+            try:
+                file_text = extract_text_from_file(uploaded.file_path)
+            except ValueError as exc:
+                raise BadRequestException(str(exc)) from exc
 
-        history = get_all_messages_service(db, room_id)
+        history = get_message_history_service(db, room_id, MAX_HISTORY_COUNT)
 
         openai_messages = build_openai_messages(history, user_message.strip(), file_text)
 
@@ -102,20 +147,30 @@ def handle_chat_request_service(db, room_id: int, user_message: str, upload_file
         assistant_message = request_chat_completion(openai_messages)
 
         if not assistant_message:
-            raise ValueError("AI 응답을 생성하지 못했습니다.")
+            raise ExternalServiceException("AI 응답을 생성하지 못했습니다.")
 
         post_messages_service(db, room_id, Role.Assistant, assistant_message, commit=False)
         db.commit()
+    except (BadRequestException, NotFoundException):
+        db.rollback()
+        _cleanup_uploaded_file(uploaded)
+        raise
+    except OpenAIError as exc:
+        db.rollback()
+        _cleanup_uploaded_file(uploaded)
+        raise ExternalServiceException(str(exc)) from exc
+    except ExternalServiceException:
+        db.rollback()
+        _cleanup_uploaded_file(uploaded)
+        raise
+    except SQLAlchemyError:
+        db.rollback()
+        _cleanup_uploaded_file(uploaded)
+        raise DatabaseException("채팅 처리 중 데이터베이스 오류가 발생했습니다.")
     except Exception:
         db.rollback()
-        if uploaded and uploaded.file_path:
-            uploaded_path = Path(uploaded.file_path)
-            if uploaded_path.exists():
-                uploaded_path.unlink()
-            parent_dir = uploaded_path.parent
-            if parent_dir.exists() and not any(parent_dir.iterdir()):
-                parent_dir.rmdir()
-        raise
+        _cleanup_uploaded_file(uploaded)
+        raise ExternalServiceException("AI 응답 처리 중 서버 오류가 발생했습니다.")
 
     return {
         "room_id": room_id,

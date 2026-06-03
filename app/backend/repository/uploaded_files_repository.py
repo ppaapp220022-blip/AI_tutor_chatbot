@@ -1,8 +1,8 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.backend.model.uploaded_files import UploadedFiles
 from loguru import logger
-
 
 def create_uploaded_files(db: Session, room_id: int, file_name: str, file_path: str) -> UploadedFiles:
     """
@@ -21,12 +21,13 @@ def create_uploaded_files(db: Session, room_id: int, file_name: str, file_path: 
     logger.info(f"파일 업로드 완료 - id: {uploaded.id}, room_id: {uploaded.room_id}")
     return uploaded
 
-
-def list_uploaded_files(db: Session, room_id: int) -> list[UploadedFiles]:
+def list_uploaded_files(db: Session, room_id: int, offset: int, limit: int) -> list[UploadedFiles]:
     """
     대화방별 업로드 파일 목록 조회
     :param db: DB 세션
     :param room_id: 대화방 번호
+    :param offset: 조회 시작 위치
+    :param limit: 조회 건수
     :return: 업로드 파일 목록
     """
     logger.info(f"업로드 파일 목록 조회 요청 - room_id: {room_id}")
@@ -34,11 +35,21 @@ def list_uploaded_files(db: Session, room_id: int) -> list[UploadedFiles]:
         db.query(UploadedFiles)
         .filter(UploadedFiles.room_id == room_id)
         .order_by(UploadedFiles.id.asc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
     logger.info(f"업로드 파일 목록 조회 완료 - room_id: {room_id}, count: {len(uploaded)}")
     return uploaded
 
+def count_uploaded_files_by_room(db: Session, room_id: int) -> int:
+    """
+    대화방별 업로드 파일 전체 건수 카운트(페이징)
+    :param db: DB 세션
+    :param room_id: 대화방 번호
+    :return: 업로드 파일 전체 건수
+    """
+    return db.query(func.count(UploadedFiles.id)).filter(UploadedFiles.room_id == room_id).scalar() or 0
 
 def find_uploaded_files(db: Session, uploaded_id: int) -> UploadedFiles | None:
     """
@@ -56,7 +67,6 @@ def find_uploaded_files(db: Session, uploaded_id: int) -> UploadedFiles | None:
 
     logger.info(f"업로드 파일 단건 조회 완료 - id: {uploaded.id}, room_id: {uploaded.room_id}")
     return uploaded
-
 
 def update_uploaded_files(db: Session, uploaded_id: int, new_file_name: str, new_file_path: str) -> UploadedFiles | None:
     """
@@ -87,7 +97,6 @@ def update_uploaded_files(db: Session, uploaded_id: int, new_file_name: str, new
                 f"file_name: {uploaded.file_name}, "
                 f"file_path: {uploaded.file_path}")
     return uploaded
-
 
 def delete_uploaded_files(db: Session, uploaded_id: int) -> bool:
     """

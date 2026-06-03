@@ -1,25 +1,22 @@
-import subprocess
-
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
+
 from app.backend.database import engine, Base
+from app.backend.exception import register_exception_handlers
+from app.backend.router.ai_chat_router import router as ai_chat_router
+from app.backend.router.chat_room_router import router as chat_room_router
+from app.backend.router.messages_router import router as messages_router
+from app.backend.router.uploaded_files_router import router as uploaded_files_router
 from loguru import logger
 from dotenv import load_dotenv
 import app.backend.model as backend_model
 import sys
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # streamlit 같이 실행
-    subprocess.Popen([
-        sys.executable, "-m", "streamlit", "run",
-        "app/frontend/main.py",
-        "--server.port=8501"
-    ])
-    yield
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
+register_exception_handlers(app)
+app.include_router(ai_chat_router)
+app.include_router(chat_room_router)
+app.include_router(messages_router)
+app.include_router(uploaded_files_router)
 
 load_dotenv()
 

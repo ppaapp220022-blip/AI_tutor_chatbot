@@ -1,8 +1,7 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-
 from app.backend.model.messages import Messages, Role
 from loguru import logger
-
 
 def create_messages(db: Session, room_id: int, role: Role, content: str) -> Messages:
     """
@@ -21,12 +20,13 @@ def create_messages(db: Session, room_id: int, role: Role, content: str) -> Mess
     logger.info(f"메시지 생성 완료 - id: {messages.id}, room_id: {messages.room_id}")
     return messages
 
-
-def list_messages_by_room(db: Session, room_id: int) -> list[Messages]:
+def list_messages_by_room(db: Session, room_id: int, offset: int, limit: int) -> list[Messages]:
     """
     대화방별 메시지 목록 조회
     :param db: DB 세션
     :param room_id: 대화방 번호
+    :param offset: 조회 시작 위치
+    :param limit: 조회 건수
     :return: 메시지 목록
     """
     logger.info(f"메시지 목록 조회 요청 - room_id: {room_id}")
@@ -34,11 +34,41 @@ def list_messages_by_room(db: Session, room_id: int) -> list[Messages]:
         db.query(Messages)
         .filter(Messages.room_id == room_id)
         .order_by(Messages.id.asc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
     logger.info(f"메시지 목록 조회 완료 - room_id: {room_id}, count: {len(messages)}")
     return messages
 
+def list_recent_messages_by_room(db: Session, room_id: int, limit: int) -> list[Messages]:
+    """
+    대화방별 최근 메시지 목록 조회
+    :param db: DB 세션
+    :param room_id: 대화방 번호
+    :param limit: 조회 건수
+    :return: 최근 메시지 목록
+    """
+    logger.info(f"최근 메시지 목록 조회 요청 - room_id: {room_id}, limit: {limit}")
+    messages = (
+        db.query(Messages)
+        .filter(Messages.room_id == room_id)
+        .order_by(Messages.id.desc())
+        .limit(limit)
+        .all()
+    )
+    messages.reverse()
+    logger.info(f"최근 메시지 목록 조회 완료 - room_id: {room_id}, count: {len(messages)}")
+    return messages
+
+def count_messages_by_room(db: Session, room_id: int) -> int:
+    """
+    대화방별 메시지 전체 건수 카운트(페이징)
+    :param db: DB 세션
+    :param room_id: 대화방 번호
+    :return: 메시지 전체 건수
+    """
+    return db.query(func.count(Messages.id)).filter(Messages.room_id == room_id).scalar() or 0
 
 def find_messages(db: Session, messages_id: int) -> Messages | None:
     """
@@ -56,7 +86,6 @@ def find_messages(db: Session, messages_id: int) -> Messages | None:
 
     logger.info(f"메시지 단건 조회 완료 - id: {messages.id}, room_id: {messages.room_id}")
     return messages
-
 
 def update_messages(db: Session, messages_id: int, new_content: str) -> Messages | None:
     """
@@ -80,7 +109,6 @@ def update_messages(db: Session, messages_id: int, new_content: str) -> Messages
     db.refresh(messages)
     logger.info(f"메시지 수정 완료 - id: {messages.id}, content: {messages.content}")
     return messages
-
 
 def delete_messages(db: Session, messages_id: int) -> bool:
     """
