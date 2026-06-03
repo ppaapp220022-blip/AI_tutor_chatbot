@@ -33,3 +33,6 @@ class Users(Base):
         return (f'Users(id={self.id}, login_id={self.login_id}, '
                 f'email={self.email}, role={self.role}, '
                 f'is_active={self.is_active}, created_at={self.created_at})')
+
+    def __repr__(self) -> str:
+        return self.__str__()

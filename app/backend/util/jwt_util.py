@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from fastapi import Depends
 from jose import jwt, JWTError
 from loguru import logger
 import os

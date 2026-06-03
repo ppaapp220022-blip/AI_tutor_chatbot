@@ -1,7 +1,7 @@
 import pytest
 from app.backend.model.users import Users, Role
 from app.backend.repository.user_repository import create_users
-from app.backend.schema.users_schema import UserRequest
+from app.backend.schema.users_schema import LoginRequest
 from app.backend.service.jwt_login_service import login
 from app.backend.service.user_service import pwd_encoding
 
@@ -13,8 +13,8 @@ def make_user(db, login_id: str = 'test', password: str = 'password123', email: 
     return create_users(db, user)
 
 
-def make_login_request(login_id: str = 'test', password: str = 'password123') -> UserRequest:
-    return UserRequest(login_id=login_id, password=password, email='test@test.com')
+def make_login_request(login_id: str = 'test', password: str = 'password123') -> LoginRequest:
+    return LoginRequest(login_id=login_id, password=password)
 
 
 # 로그인 테스트

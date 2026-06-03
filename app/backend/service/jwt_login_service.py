@@ -5,10 +5,10 @@ from app.backend.database import redis_client
 from app.backend.repository.user_repository import find_user_id
 from app.backend.service.user_service import pwd_encoding
 from app.backend.util.jwt_util import create_access_token, create_refresh_token
-from app.backend.schema.users_schema import UserRequest
+from app.backend.schema.users_schema import LoginRequest
 
 
-def login(db: Session, user: UserRequest) -> dict:
+def login(db: Session, user: LoginRequest) -> dict:
     """
     로그인
     :param db: 세션
@@ -34,11 +34,10 @@ def login(db: Session, user: UserRequest) -> dict:
     return {'access_token': access_token, 'refresh_token': refresh_token, 'token_type': 'bearer'}
 
 
-def logout(login_id: str):
+def logout(login_id: str) -> None:
     """
     로그아웃
     :param login_id: 현재 로그인 된 아이디
     """
-    # 레디스에 저장한거 제거
     redis_client.delete(f'refresh:{login_id}')
     logger.info(f'로그아웃 완료 : {login_id}')

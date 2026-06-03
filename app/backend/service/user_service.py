@@ -1,13 +1,12 @@
-from typing import Optional
 import random
 
 from passlib.context import CryptContext
 from app.backend.model import Users
 from sqlalchemy.orm import Session
 from app.backend.repository.user_repository import (
-    create_users, find_user_id, update_user, update_users_active, find_users_by_ids_and_active
+    create_users, find_user_id, update_user, update_users_active, find_users_by_ids_and_active, find_user_all
 )
-from app.backend.schema.users_schema import UserRequest, UserResponse, UsersActiveRequest
+from app.backend.schema.users_schema import UserRequest, UserResponse, UsersActiveRequest, UserPageResponse
 from app.backend.database import redis_client
 from app.backend.util.email_utils import send_email
 from loguru import logger
@@ -19,7 +18,7 @@ pwd_encoding = CryptContext(schemes=["bcrypt"])
 EXPIRED_OTP = 60 * 3
 
 
-def add_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
+def add_user(db: Session, user: UserRequest) -> UserResponse:
     """
     회원가입
     :param db: 세션
@@ -38,7 +37,7 @@ def add_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
     return UserResponse.model_validate(created_user)
 
 
-def send_otp_code(email: str):
+def send_otp_code(email: str) -> None:
     """
     OTP 메일 발송
     :param email: 보낼 이메일
@@ -71,7 +70,7 @@ def vacillation_otp(email: str, otp: str) -> bool:
     return True
 
 
-def modify_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
+def modify_user(db: Session, user: UserRequest) -> UserResponse:
     """
     회원 정보 수정
     :param db: 세션
@@ -93,7 +92,6 @@ def modify_user(db: Session, user: UserRequest) -> Optional[UserResponse]:
         raise ValueError('현재 이메일과 동일함 변경 불가')
 
     new_password = pwd_encoding.hash(user.password)
-    # Users 객체로 변환해서 update_user 호출
     update_data = Users(login_id=user.login_id, password=new_password, email=user.email)
     updated = update_user(db, update_data)
     logger.info(f'회원 정보 수정 완료 : {UserResponse.model_validate(updated)}')
@@ -118,3 +116,38 @@ def modify_active_user(db: Session, user: UsersActiveRequest) -> int:
     count = update_users_active(db, target_ids, user.is_active)
     logger.info(f'활성화 상태 변경 완료 - {count}명')
     return count
+
+
+def get_user_all(db: Session, page: int = 1, size: int = 10) -> UserPageResponse:
+    """
+    회원 전체 조회 (페이징)
+    :param db: 세션
+    :param page: 페이지 번호 (1부터 시작)
+    :param size: 페이지 크기
+    :return: 페이징된 회원 목록
+    """
+    skip = (page - 1) * size
+    users, total = find_user_all(db, skip=skip, limit=size)
+    total_pages = (total + size - 1) // size
+
+    logger.info(f'회원 전체 조회 : {page}페이지 / 전체 {total_pages}페이지')
+    return UserPageResponse(
+        users=[UserResponse.model_validate(u) for u in users],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages
+    )
+
+
+def get_login_id(db: Session, login_id: str) -> UserResponse:
+    """
+    회원 상세 조회
+    :param db: 세션
+    :param login_id: 로그인 아이디
+    :return: 회원
+    """
+    user = find_user_id(db, login_id)
+    if not user:
+        raise ValueError('해당 유저 존재하지 않음')
+    return UserResponse.model_validate(user)

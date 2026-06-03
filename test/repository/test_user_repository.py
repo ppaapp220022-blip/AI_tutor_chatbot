@@ -1,6 +1,13 @@
+from loguru import logger
+
 from app.backend.model.users import Users, Role
 from app.backend.repository.user_repository import (
-    create_users, find_user_id, update_user, update_users_active, delete_user
+    create_users,
+    find_user_id,
+    update_user,
+    update_users_active,
+    delete_user,
+    find_user_all,
 )
 
 
@@ -132,3 +139,16 @@ def test_delete_user_not_found(db):
 
     # then
     assert not result
+
+
+def test_find_user_all(db):
+    # given
+    create_users(db, make_user('test1', '1234', 'test1@test.com'))
+    create_users(db, make_user('test2', '1234', 'test2@test.com'))
+    create_users(db, make_user('test3', '1234', 'test3@test.com'))
+
+    user_all = find_user_all(db)
+    for users in user_all:
+        logger.info(users)
+
+    assert user_all

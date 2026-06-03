@@ -1,12 +1,20 @@
 import subprocess
-
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from app.backend.database import engine, Base
-from loguru import logger
-from dotenv import load_dotenv
-import app.backend.model as backend_model
 import sys
+from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from loguru import logger
+from starlette import status
+from starlette.middleware.cors import CORSMiddleware
+
+from app.backend.database import engine, Base
+from app.backend.router.users_router import public_router, private_router
+from app.backend.router.admin_router import admin_router
+import app.backend.model as backend_model
+
+load_dotenv()
 
 
 @asynccontextmanager
@@ -19,14 +27,35 @@ async def lifespan(app: FastAPI):
     ])
     yield
 
+
 app = FastAPI(lifespan=lifespan)
 
-load_dotenv()
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8501"],  # Streamlit 주소
+    allow_credentials=True,  # 쿠키 허용
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# router 등록
+app.include_router(public_router)
+app.include_router(private_router)
+app.include_router(admin_router)
+
+# 전역 예외 핸들러
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"message": str(exc)}
+    )
 
 # 테이블 생성
 Base.metadata.create_all(bind=engine)
 
-# 설정
+# 로그 설정
 logger.remove()  # 기본 설정 제거
 logger.add(
     sys.stdout,
@@ -39,6 +68,7 @@ logger.add(
     level="DEBUG"
 )
 
+
 @app.get("/")
-def root():
+def root() -> dict:
     return {"message": "Hello World"}

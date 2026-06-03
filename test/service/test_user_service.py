@@ -1,8 +1,15 @@
 import pytest
+from loguru import logger
+
 from app.backend.repository.user_repository import create_users, find_user_id
 from app.backend.model.users import Users, Role
 from app.backend.schema.users_schema import UserRequest, UsersActiveRequest
-from app.backend.service.user_service import add_user, modify_user, modify_active_user
+from app.backend.service.user_service import (
+    add_user,
+    modify_user,
+    modify_active_user,
+    get_user_all,
+)
 
 
 # 테스트용 유저 생성 헬퍼
@@ -133,3 +140,12 @@ def test_modify_active_user_multiple(db):
     assert user2_updated is not None
     assert not user1_updated.is_active
     assert not user2_updated.is_active
+
+
+def test_get_user_all(db):
+    make_user(db, 'test1', 'pw1', 'test1@test.com')
+    make_user(db, 'test2', 'pw2', 'test2@test.com')
+    users = get_user_all(db)
+    for u in users:
+        logger.info(u)
+    assert users

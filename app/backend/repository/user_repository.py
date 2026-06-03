@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.orm import Session
 from app.backend.model.users import Users, Role
 from loguru import logger
@@ -35,6 +35,29 @@ def find_user_id(db: Session, login_id: str) -> Optional[Users]:
         return None
     logger.info(f'유저 단건 조회 완료 : {user}')
     return user
+
+
+def find_user_all(db: Session, skip: int = 0, limit: int = 10) -> tuple[list[Users], int]:
+    """
+    회원만 전체 조회 (페이징)
+    :param db: 세션
+    :param skip: 시작 위치
+    :param limit: 페이지 크기
+    :return: 회원 목록, 전체 수
+    """
+    total = db.execute(
+        select(func.count()).where(Users.role == Role.USER)
+    ).scalar_one()
+
+    users = db.execute(
+        select(Users)
+        .where(Users.role == Role.USER)
+        .offset(skip)
+        .limit(limit)
+    ).scalars().all()
+
+    logger.info(f'회원 전체 조회 완료 : {len(users)}명 / 전체 {total}명')
+    return list(users), total
 
 
 def find_users_by_ids_and_active(db: Session, user_ids: list[int], is_active: bool) -> list[Users]:
