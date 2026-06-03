@@ -24,7 +24,7 @@ def create_access_token(login_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_ACCESS_EXPIRE_MINUTES)
     date = {"sub": login_id, "type": "access", "exp": expire}
     token = jwt.encode(date, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    logger.info(f'엑세스 토큰 생성 : {login_id}')
+    logger.info(f'엑세스 토큰 생성 : {login_id}, {token}')
     return token
 
 
@@ -37,7 +37,7 @@ def create_refresh_token(login_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=JWT_REFRESH_EXPIRE_DAYS)
     date = {"sub": login_id, "type": "refresh", "exp": expire}
     token = jwt.encode(date, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    logger.info(f'리프레시 토큰 생성 : {login_id}')
+    logger.info(f'리프레시 토큰 생성 : {login_id}, {token}')
     return token
 
 
