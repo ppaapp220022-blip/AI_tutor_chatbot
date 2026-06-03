@@ -92,7 +92,7 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)) -> JSONResp
                     status_code=status.HTTP_204_NO_CONTENT,
                     summary='로그아웃'
                     )
-def logout_user(login_id: str = Depends(get_current_users())):
+def logout_user(login_id: str = Depends(get_current_users)):
     logout(login_id)
 
 
