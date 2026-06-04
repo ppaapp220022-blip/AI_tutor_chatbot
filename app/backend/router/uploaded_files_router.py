@@ -92,6 +92,8 @@ def update_uploaded_file(room_id: int, uploaded_id: int, request: UploadedFileUp
     uploaded = get_one_uploaded_files_service(db, uploaded_id)
     if uploaded.room_id != room_id:
         raise NotFoundException("수정할 파일 대상이 해당 채팅방에 존재하지 않습니다.")
+    if not request.file_name or not request.file_path:
+        raise ValueError('파일 이름과 경로는 필수 값입니다.')
     return patch_uploaded_files_service(db, uploaded_id, request.file_name, request.file_path)
 
 @router.delete("/{uploaded_id}",

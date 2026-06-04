@@ -56,7 +56,7 @@ def list_chat_rooms(db: Session, offset: int, limit: int) -> list[ChatRoom]:
             .limit(limit)
         ).scalars().all())
     logger.info(f'채팅방 목록 조회 완료 - count: {len(chat_rooms)}')
-    return chat_rooms
+    return list(chat_rooms)
 
 def count_chat_rooms(db: Session) -> int:
     """

@@ -17,7 +17,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.backend.database import engine, Base
 from app.backend.router.users_router import public_router, private_router
 from app.backend.router.admin_router import admin_router
-import app.backend.model as backend_model # # noqa: F401
+import app.backend.model as _model  # noqa: F401 - Base.metadata.create_all() 모델 인식용
 
 load_dotenv()
 

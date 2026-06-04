@@ -2,6 +2,7 @@ from io import BytesIO
 
 import pytest
 
+from app.backend.exception.app_exceptions import ExternalServiceException
 from app.backend.model.users import Users, Role
 from app.backend.repository.messages_repository import list_messages_by_room
 from app.backend.repository.uploaded_files_repository import list_uploaded_files
@@ -53,7 +54,7 @@ def test_handle_chat_request_service_without_real_pdf(db, monkeypatch):
     assert result["uploaded_file_id"] is not None
     assert result["file_name"] == "fake.pdf"
     assert result["assistant_message"] == "문서 요약 결과입니다."
-    messages = list_messages_by_room(db, room.id)
+    messages = list_messages_by_room(db, room.id, offset=0, limit=100)
     assert len(messages) == 2
 
 
@@ -78,7 +79,8 @@ def test_handle_chat_request_service_rolls_back_when_ai_fails(db, monkeypatch, u
         fake_request_chat_completion,
     )
 
-    with pytest.raises(RuntimeError, match="openai failure"):
+    # RuntimeError → ExternalServiceException 으로 변환됨
+    with pytest.raises(ExternalServiceException):
         handle_chat_request_service(
             db,
             room.id,
@@ -86,6 +88,6 @@ def test_handle_chat_request_service_rolls_back_when_ai_fails(db, monkeypatch, u
             dummy_file,
         )
 
-    assert list_messages_by_room(db, room.id) == []
-    assert list_uploaded_files(db, room.id) == []
+    assert list_messages_by_room(db, room.id, offset=0, limit=100) == []
+    assert list_uploaded_files(db, room.id, offset=0, limit=100) == []
     assert list(upload_dir.rglob("*")) == []
