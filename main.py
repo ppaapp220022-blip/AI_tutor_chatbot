@@ -1,3 +1,8 @@
+from app.backend.exception import register_exception_handlers
+from app.backend.router.ai_chat_router import router as ai_chat_router
+from app.backend.router.chat_room_router import router as chat_room_router
+from app.backend.router.messages_router import router as messages_router
+from app.backend.router.uploaded_files_router import router as uploaded_files_router
 import subprocess
 import sys
 from contextlib import asynccontextmanager
@@ -12,10 +17,9 @@ from starlette.middleware.cors import CORSMiddleware
 from app.backend.database import engine, Base
 from app.backend.router.users_router import public_router, private_router
 from app.backend.router.admin_router import admin_router
-import app.backend.model as backend_model
+import app.backend.model as backend_model # # noqa: F401
 
 load_dotenv()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,9 +44,14 @@ app.add_middleware(
 )
 
 # router 등록
+register_exception_handlers(app)
 app.include_router(public_router)
 app.include_router(private_router)
 app.include_router(admin_router)
+app.include_router(ai_chat_router)
+app.include_router(chat_room_router)
+app.include_router(messages_router)
+app.include_router(uploaded_files_router)
 
 # 전역 예외 핸들러
 @app.exception_handler(ValueError)
