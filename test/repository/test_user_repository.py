@@ -8,6 +8,7 @@ from app.backend.repository.user_repository import (
     update_users_active,
     delete_user,
     find_user_all,
+    find_users_by_chat_message
 )
 
 
@@ -152,3 +153,9 @@ def test_find_user_all(db):
         logger.info(users)
 
     assert user_all
+
+
+def test_find_users_by_chat_message(db):
+    user_messages = find_users_by_chat_message(db, 'test')
+    logger.info(user_messages)
+    assert user_messages

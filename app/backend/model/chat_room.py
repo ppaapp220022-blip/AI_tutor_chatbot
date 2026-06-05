@@ -11,7 +11,7 @@ class ChatRoom(Base):
     __table_args__ = {'comment': '대화방'}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    member_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True, comment='회원')  # FK
+    member_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, comment='회원')  # FK
     title: Mapped[str] = mapped_column(String(20), nullable=True, comment='대화방 제목')
     persona: Mapped[str] = mapped_column(String(50), nullable=True, comment='페르소나 종류')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(KST), comment='생성일시')

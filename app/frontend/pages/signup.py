@@ -1,5 +1,8 @@
 import streamlit as st
 
+from app.frontend.api.auth_api import send_otp_email, signup_user, verify_otp_email
+from app.frontend.api.http_client import FrontendApiError
+
 st.set_page_config(
     page_title='회원가입',
     page_icon='🤖',
@@ -20,9 +23,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 이미 로그인된 경우 역할별 이동
 if 'access_token' in st.session_state:
-    st.switch_page('pages/chat.py')
+    if st.session_state.get('role') == 'ADMIN':
+        st.switch_page('pages/admin.py')
+    else:
+        st.switch_page('pages/chat.py')
 
+# 회원가입 플래그 기본값
 if 'otp_sent' not in st.session_state:
     st.session_state['otp_sent'] = False
 if 'otp_verified' not in st.session_state:
@@ -50,9 +58,13 @@ def otp_modal():
             if not otp_code:
                 st.error('인증코드를 입력해주세요')
             else:
-                # TODO: 백엔드 연동
-                st.session_state['otp_verified'] = True
-                st.rerun()
+                try:
+                    verify_otp_email(st.session_state['signup_info'].get('email', ''), otp_code)
+                except FrontendApiError as exc:
+                    st.error(exc.message)
+                else:
+                    st.session_state['otp_verified'] = True
+                    st.rerun()
     with col2:
         if st.button('취소', use_container_width=True):
             st.session_state['otp_sent'] = False
@@ -96,33 +108,48 @@ with st.form('signup_form'):
         signup_submit_btn = False
 
 if otp_btn:
+    # 입력값 검증 후 인증번호 발송
     if not login_id or not password or not password_check or not email:
         st.error('모든 항목을 입력해주세요')
     elif password != password_check:
         st.error('비밀번호가 일치하지 않습니다')
     else:
-        st.session_state['otp_sent'] = True
-        st.session_state['signup_info'] = {
-            'login_id': login_id,
-            'password': password,
-            'password_check': password_check,
-            'email': email
-        }
-        otp_modal()
+        try:
+            send_otp_email(email)
+        except FrontendApiError as exc:
+            st.error(exc.message)
+        else:
+            st.session_state['otp_sent'] = True
+            st.session_state['signup_info'] = {
+                'login_id': login_id,
+                'password': password,
+                'password_check': password_check,
+                'email': email
+            }
+            st.rerun()
 
 if signup_submit_btn:
+    # 인증 완료 정보로 회원가입
     info = st.session_state.get('signup_info', {})
     if not info.get('login_id') or not info.get('password'):
         st.error('모든 항목을 입력해주세요')
     elif info.get('password') != info.get('password_check'):
         st.error('비밀번호가 일치하지 않습니다')
     else:
-        # TODO: 백엔드 연동
-        st.success('회원가입이 완료됐습니다')
-        st.session_state['otp_sent'] = False
-        st.session_state['otp_verified'] = False
-        st.session_state['signup_info'] = {}
-        st.switch_page('pages/login.py')
+        try:
+            signup_user(
+                info['login_id'],
+                info['password'],
+                info['email'],
+            )
+        except FrontendApiError as exc:
+            st.error(exc.message)
+        else:
+            st.success('회원가입이 완료됐습니다')
+            st.session_state['otp_sent'] = False
+            st.session_state['otp_verified'] = False
+            st.session_state['signup_info'] = {}
+            st.switch_page('pages/login.py')
 
 if back_btn:
     st.switch_page('pages/login.py')

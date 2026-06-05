@@ -41,16 +41,20 @@ def create_refresh_token(login_id: str) -> str:
     return token
 
 
-def decode_token(token: str) -> str:
+def decode_token(token: str, expected_type: str | None = None) -> str:
     """
     토큰 검증
     :param token: JWT 토큰
+    :param expected_type: access / refresh 타입 검증값
     :return: 로그인 아이디
     """
     try:
         payload: dict = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         login_id: str = payload.get("sub") or ''
         if not login_id:
+            raise ValueError('유효하지 않은 토큰입니다.')
+        token_type: str = payload.get("type") or ''
+        if expected_type and token_type != expected_type:
             raise ValueError('유효하지 않은 토큰입니다.')
         return login_id
     except JWTError:

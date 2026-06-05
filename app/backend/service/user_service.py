@@ -4,9 +4,17 @@ from passlib.context import CryptContext
 from app.backend.model import Users
 from sqlalchemy.orm import Session
 from app.backend.repository.user_repository import (
-    create_users, find_user_id, update_user, update_users_active, find_users_by_ids_and_active, find_user_all
+    create_users, find_user_id, update_user, update_users_active, find_users_by_ids_and_active, find_user_all,
+    find_users_by_chat_message
 )
-from app.backend.schema.users_schema import UserRequest, UserResponse, UsersActiveRequest, UserPageResponse
+from app.backend.schema.users_schema import (
+    UserRequest,
+    UserResponse,
+    UsersActiveRequest,
+    UserPageResponse,
+    UserChatHistoryPageResponse,
+    UserChatHistoryResponse,
+)
 from app.backend.database import redis_client
 from app.backend.util.email_utils import send_email
 from loguru import logger
@@ -151,3 +159,29 @@ def get_login_id(db: Session, login_id: str) -> UserResponse:
     if not user:
         raise ValueError('해당 유저 존재하지 않음')
     return UserResponse.model_validate(user)
+
+
+def get_user_chat_history(db: Session, login_id: str, page: int = 1, size: int = 10) -> UserChatHistoryPageResponse:
+    """
+    회원 채팅 이력 조회
+    :param db: 세션
+    :param login_id: 로그인 아이디
+    :param page: 페이지 번호
+    :param size: 페이지 크기
+    :return: 채팅 이력 목록
+    """
+    user = find_user_id(db, login_id)
+    if not user:
+        raise ValueError('해당 유저 존재하지 않음')
+
+    skip = (page - 1) * size
+    items, total = find_users_by_chat_message(db, login_id, skip=skip, limit=size)
+    total_pages = max(1, (total + size - 1) // size)
+
+    return UserChatHistoryPageResponse(
+        items=[UserChatHistoryResponse.model_validate(item) for item in items],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages,
+    )

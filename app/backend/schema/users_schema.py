@@ -1,6 +1,9 @@
 from pydantic import ConfigDict
+from datetime import datetime
+
 from app.backend.model.users import Role
 from app.backend.schema.base_schema import BaseSchema
+from app.backend.schema.base_schema import PaginationResponse
 
 
 # 요청 (password 있음)
@@ -61,7 +64,28 @@ class LoginResponse(BaseSchema):
     token_type: str
 
 
+class RefreshRequest(BaseSchema):
+    refresh_token: str
+
+
 # 단건 / 여러건 활성화 여부 변경
 class UsersActiveRequest(BaseSchema):
     user_idx: list[int]
     is_active: bool
+
+
+class UserChatHistoryResponse(BaseSchema):
+    user_id: int
+    login_id: str
+    room_id: int
+    title: str | None
+    persona: str | None
+    message_id: int
+    role: str
+    content: str | None
+    created_at: datetime
+
+
+class UserChatHistoryPageResponse(PaginationResponse):
+    items: list[UserChatHistoryResponse]
+    total_pages: int

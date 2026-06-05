@@ -1,5 +1,9 @@
 import streamlit as st
 
+from app.frontend.api.admin_api import fetch_member, fetch_member_chat_history, fetch_members, set_member_active
+from app.frontend.api.auth_api import logout_user
+from app.frontend.api.http_client import FrontendApiError
+
 st.set_page_config(
     page_title='관리자',
     page_icon='🤖',
@@ -38,19 +42,48 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 비로그인 사용자는 로그인 페이지 이동
 if 'access_token' not in st.session_state:
     st.switch_page('pages/login.py')
 
-DUMMY_USERS = [
-    {'id': 1, 'login_id': 'user1', 'email': 'user1@test.com', 'role': 'USER', 'is_active': True},
-    {'id': 2, 'login_id': 'user2', 'email': 'user2@test.com', 'role': 'USER', 'is_active': True},
-    {'id': 3, 'login_id': 'user3', 'email': 'user3@test.com', 'role': 'USER', 'is_active': False},
-]
+# 관리자 권한이 아니면 채팅 페이지 이동
+if st.session_state.get('role') != 'ADMIN':
+    st.switch_page('pages/chat.py')
 
+# 관리자 화면 기본 상태
 if 'users' not in st.session_state:
-    st.session_state['users'] = DUMMY_USERS
+    st.session_state['users'] = []
 if 'selected_user' not in st.session_state:
     st.session_state['selected_user'] = None
+if 'admin_page' not in st.session_state:
+    st.session_state['admin_page'] = 1
+if 'admin_page_size' not in st.session_state:
+    st.session_state['admin_page_size'] = 10
+if 'admin_total' not in st.session_state:
+    st.session_state['admin_total'] = 0
+if 'admin_total_pages' not in st.session_state:
+    st.session_state['admin_total_pages'] = 1
+if 'history_page' not in st.session_state:
+    st.session_state['history_page'] = 1
+if 'history_page_size' not in st.session_state:
+    st.session_state['history_page_size'] = 5
+if 'history_total' not in st.session_state:
+    st.session_state['history_total'] = 0
+if 'history_total_pages' not in st.session_state:
+    st.session_state['history_total_pages'] = 1
+
+try:
+    # 회원 목록 조회
+    member_payload = fetch_members(
+        page=st.session_state['admin_page'],
+        size=st.session_state['admin_page_size'],
+    )
+    st.session_state['users'] = member_payload.get('users', [])
+    st.session_state['admin_total'] = member_payload.get('total', 0)
+    st.session_state['admin_total_pages'] = member_payload.get('total_pages', 1)
+except FrontendApiError as exc:
+    st.error(exc.message)
+    st.stop()
 
 # 사이드바
 with st.sidebar:
@@ -66,13 +99,24 @@ with st.sidebar:
         st.switch_page('pages/chat.py')
     st.write('')
     if st.button('로그아웃', use_container_width=True):
+        # 서버와 세션 로그아웃 처리
+        try:
+            logout_user()
+        except FrontendApiError:
+            pass
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page('pages/login.py')
 
 # 회원 상세 조회
 if st.session_state['selected_user'] is not None:
-    user = st.session_state['selected_user']
+    # 선택 회원 상세 조회
+    selected_login_id = st.session_state['selected_user']['login_id']
+    try:
+        user = fetch_member(selected_login_id)
+    except FrontendApiError as exc:
+        st.error(exc.message)
+        st.stop()
 
     if st.button('← 목록으로 돌아가기'):
         st.session_state['selected_user'] = None
@@ -108,13 +152,72 @@ if st.session_state['selected_user'] is not None:
             """, unsafe_allow_html=True)
 
     st.divider()
+    try:
+        history_payload = fetch_member_chat_history(
+            selected_login_id,
+            page=st.session_state['history_page'],
+            size=st.session_state['history_page_size'],
+        )
+        history_items = history_payload.get('items', [])
+        st.session_state['history_total'] = history_payload.get('total', 0)
+        st.session_state['history_total_pages'] = history_payload.get('total_pages', 1)
+    except FrontendApiError as exc:
+        st.error(exc.message)
+        history_items = []
+
     st.markdown("""
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#89b4fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <strong>채팅 이력</strong>
         </div>
     """, unsafe_allow_html=True)
-    st.info('백엔드 연동 후 채팅 이력이 표시됩니다')
+
+    if not history_items:
+        st.info('채팅 이력이 없습니다')
+    else:
+        grouped_rooms = {}
+        for item in history_items:
+            room_key = (item['room_id'], item.get('title') or '제목 없는 채팅방', item.get('persona') or '일반 튜터')
+            grouped_rooms.setdefault(room_key, []).append(item)
+
+        for (room_id, title, persona), messages in grouped_rooms.items():
+            with st.expander(f'방 #{room_id} - {title}'):
+                st.caption(f'페르소나: {persona}')
+                for message in messages:
+                    role_label = '사용자' if str(message.get('role', '')).lower() == 'user' else 'AI'
+                    st.markdown(
+                        f"""
+                        <div style="padding:10px 12px; border:1px solid #313244; border-radius:10px; margin-bottom:8px">
+                            <div style="font-size:12px; color:#89b4fa; margin-bottom:4px">{role_label} / {message['created_at']}</div>
+                            <div>{message['content']}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+    st.write("")
+    hist_prev, hist_mid, hist_next = st.columns([1, 2, 1])
+    with hist_prev:
+        # 이전 이력 페이지 이동
+        if st.button('이전 이력', use_container_width=True, disabled=st.session_state['history_page'] <= 1):
+            st.session_state['history_page'] -= 1
+            st.rerun()
+    with hist_mid:
+        st.markdown(
+            f"<div style='text-align:center; padding-top:0.4rem'>"
+            f"이력 페이지 {st.session_state['history_page']} / {st.session_state['history_total_pages']}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    with hist_next:
+        # 다음 이력 페이지 이동
+        if st.button(
+            '다음 이력',
+            use_container_width=True,
+            disabled=st.session_state['history_page'] >= st.session_state['history_total_pages'],
+        ):
+            st.session_state['history_page'] += 1
+            st.rerun()
 
 # 회원 목록
 else:
@@ -167,28 +270,59 @@ else:
         with col5:
             if st.button('보기', key=f"detail_{user['id']}"):
                 st.session_state['selected_user'] = user
+                st.session_state['history_page'] = 1
                 st.rerun()
 
     st.divider()
 
     col1, col2 = st.columns(2)
     with col1:
+        # 회원 활성화
         if st.button('선택 활성화', use_container_width=True, type='primary'):
             if not selected_ids:
                 st.error('회원을 선택해주세요')
             else:
-                for user in st.session_state['users']:
-                    if user['id'] in selected_ids:
-                        user['is_active'] = True
-                st.success(f'{len(selected_ids)}명 활성화 완료')
-                st.rerun()
+                try:
+                    set_member_active(selected_ids, True)
+                except FrontendApiError as exc:
+                    st.error(exc.message)
+                else:
+                    st.success(f'{len(selected_ids)}명 활성화 완료')
+                    st.rerun()
     with col2:
+        # 회원 비활성화
         if st.button('선택 비활성화', use_container_width=True):
             if not selected_ids:
                 st.error('회원을 선택해주세요')
             else:
-                for user in st.session_state['users']:
-                    if user['id'] in selected_ids:
-                        user['is_active'] = False
-                st.success(f'{len(selected_ids)}명 비활성화 완료')
-                st.rerun()
+                try:
+                    set_member_active(selected_ids, False)
+                except FrontendApiError as exc:
+                    st.error(exc.message)
+                else:
+                    st.success(f'{len(selected_ids)}명 비활성화 완료')
+                    st.rerun()
+
+    st.write("")
+    nav_prev, nav_mid, nav_next = st.columns([1, 2, 1])
+    with nav_prev:
+        # 이전 페이지 이동
+        if st.button('이전 페이지', use_container_width=True, disabled=st.session_state['admin_page'] <= 1):
+            st.session_state['admin_page'] -= 1
+            st.rerun()
+    with nav_mid:
+        st.markdown(
+            f"<div style='text-align:center; padding-top:0.4rem'>"
+            f"페이지 {st.session_state['admin_page']} / {st.session_state['admin_total_pages']}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    with nav_next:
+        # 다음 페이지 이동
+        if st.button(
+            '다음 페이지',
+            use_container_width=True,
+            disabled=st.session_state['admin_page'] >= st.session_state['admin_total_pages'],
+        ):
+            st.session_state['admin_page'] += 1
+            st.rerun()

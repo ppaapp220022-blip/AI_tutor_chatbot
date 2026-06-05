@@ -4,8 +4,18 @@ from starlette import status
 
 from app.backend.database import get_db
 from app.backend.dependencies import get_current_users
-from app.backend.schema.users_schema import UsersActiveRequest, UserResponse, UserPageResponse
-from app.backend.service.user_service import get_user_all, get_login_id, modify_active_user
+from app.backend.schema.users_schema import (
+    UsersActiveRequest,
+    UserResponse,
+    UserPageResponse,
+    UserChatHistoryPageResponse,
+)
+from app.backend.service.user_service import (
+    get_user_all,
+    get_login_id,
+    modify_active_user,
+    get_user_chat_history,
+)
 
 admin_router = APIRouter(
     prefix='/admin',
@@ -47,6 +57,28 @@ def get_member(login_id: str, db: Session = Depends(get_db)) -> UserResponse:
     :return: 회원 상세 정보
     """
     return get_login_id(db, login_id)
+
+
+@admin_router.get('/member/{login_id}/chat-history',
+                  response_model=UserChatHistoryPageResponse,
+                  status_code=status.HTTP_200_OK,
+                  summary='회원 채팅 이력 조회'
+                  )
+def get_member_chat_history(
+        login_id: str,
+        db: Session = Depends(get_db),
+        page: int = Query(default=1, ge=1, description='페이지 번호'),
+        size: int = Query(default=10, ge=1, le=100, description='페이지 크기')
+) -> UserChatHistoryPageResponse:
+    """
+    회원 채팅 이력 조회
+    :param login_id: 로그인 아이디
+    :param db: 세션
+    :param page: 페이지 번호
+    :param size: 페이지 크기
+    :return: 채팅 이력 목록
+    """
+    return get_user_chat_history(db, login_id, page=page, size=size)
 
 
 @admin_router.put('/member/activate',

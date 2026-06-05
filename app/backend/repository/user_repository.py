@@ -1,6 +1,8 @@
 from typing import Optional
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, cast, String
 from sqlalchemy.orm import Session
+
+from app.backend.model import ChatRoom, Messages
 from app.backend.model.users import Users, Role
 from loguru import logger
 
@@ -75,6 +77,45 @@ def find_users_by_ids_and_active(db: Session, user_ids: list[int], is_active: bo
     ).scalars().all()
     logger.info(f'변경 대상 회원 조회 완료 : {len(users)}명')
     return list(users)
+
+def find_users_by_chat_message(db: Session, login_id: str, skip: int = 0, limit: int = 10) -> tuple[list[dict], int]:
+    """
+    회원 채팅 이력 조회
+    :param db: 세션
+    :param login_id: 로그인 아이디
+    :param skip: 시작 위치
+    :param limit: 조회 개수
+    :return: 채팅 이력, 전체 수
+    """
+    total = db.execute(
+        select(func.count(Messages.id))
+        .join(ChatRoom, ChatRoom.id == Messages.room_id)
+        .join(Users, Users.id == ChatRoom.member_id)
+        .where(Users.login_id == login_id)
+    ).scalar_one()
+
+    user_message = (
+        select(
+            Users.id.label("user_id"),
+            Users.login_id.label("login_id"),
+            ChatRoom.id.label("room_id"),
+            ChatRoom.title.label("title"),
+            ChatRoom.persona.label("persona"),
+            Messages.id.label("message_id"),
+            cast(Messages.role, String).label("role"),
+            Messages.content.label("content"),
+            Messages.created_at.label("created_at"),
+        )
+        .join(ChatRoom, Users.id == ChatRoom.member_id)
+        .join(Messages, ChatRoom.id == Messages.room_id)
+        .where(Users.login_id == login_id)
+        .order_by(ChatRoom.id.desc(), Messages.created_at.asc())
+        .offset(skip)
+        .limit(limit)
+    )
+    items = db.execute(user_message).mappings().all()
+    logger.info(f'채팅 이력 조회 완료 : {login_id}, count={len(items)}, total={total}')
+    return list(items), total
 
 
 def update_user(db: Session, user: Users) -> Optional[Users]:

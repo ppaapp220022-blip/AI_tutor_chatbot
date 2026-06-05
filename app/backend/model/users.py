@@ -20,7 +20,7 @@ class Users(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)  # PK
     login_id: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, comment='로그인 아이디')
     password: Mapped[str] = mapped_column(String(60), nullable=False, comment='비밀번호')
-    email: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, comment='이메일')
+    email: Mapped[str] = mapped_column(String(40), nullable=False, comment='이메일')
     role: Mapped[Role] = mapped_column(Enum(Role), nullable=False, default=Role.USER, comment='유저 or 관리자')
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment='계정 활성화 여부')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(KST), comment='생성일시')

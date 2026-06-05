@@ -1,10 +1,9 @@
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.backend.util.jwt_util import decode_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
-
+bearer_schema = HTTPBearer()
 
 # Header - Bearer
-def get_current_users(token: str = Depends(oauth2_scheme)) -> str:
-    return decode_token(token)
+def get_current_users(token: HTTPAuthorizationCredentials = Depends(bearer_schema)) -> str:
+    return decode_token(token.credentials)

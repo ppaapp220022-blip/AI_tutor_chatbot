@@ -8,10 +8,8 @@ import sys
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from loguru import logger
-from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 
 from app.backend.database import engine, Base
@@ -43,8 +41,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# router 등록
+# 전역 예외 핸들러
 register_exception_handlers(app)
+
+# router 등록
 app.include_router(public_router)
 app.include_router(private_router)
 app.include_router(admin_router)
@@ -52,14 +52,6 @@ app.include_router(ai_chat_router)
 app.include_router(chat_room_router)
 app.include_router(messages_router)
 app.include_router(uploaded_files_router)
-
-# 전역 예외 핸들러
-@app.exception_handler(ValueError)
-async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"message": str(exc)}
-    )
 
 # 테이블 생성
 Base.metadata.create_all(bind=engine)

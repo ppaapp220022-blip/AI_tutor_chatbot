@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Cookie
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.responses import JSONResponse
@@ -9,8 +9,8 @@ from app.backend.schema.users_schema import (
     UserRequest, UserResponse, LoginRequest, LoginResponse,
     OtpRequest, OtpVerifyRequest
 )
-from app.backend.service.user_service import (send_otp_code, vacillation_otp, add_user, modify_user)
-from app.backend.service.jwt_login_service import login, logout
+from app.backend.service.user_service import (send_otp_code, vacillation_otp, add_user, modify_user, get_login_id)
+from app.backend.service.jwt_login_service import login, logout, refresh_access_token
 
 public_router = APIRouter(prefix='/users', tags=['users'])  # = Java - @RequestMapping()
 private_router = APIRouter(prefix='/users', tags=['users'], dependencies=[Depends(get_current_users)])  # = Java - @RequestMapping()
@@ -88,6 +88,21 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)) -> JSONResp
     )
     return response
 
+
+@public_router.post('/refresh',
+                    response_model=LoginResponse,
+                    status_code=status.HTTP_200_OK,
+                    summary='엑세스 토큰 재발급'
+                    )
+def refresh_token(refresh_token: str | None = Cookie(default=None)) -> dict:
+    """
+    리프레시 토큰으로 엑세스 토큰 재발급
+    :param refresh_token: 쿠키의 리프레시 토큰
+    :return: 새 엑세스토큰
+    """
+    result = refresh_access_token(refresh_token or '')
+    return result
+
 @private_router.post('/logout',
                     status_code=status.HTTP_204_NO_CONTENT,
                     summary='로그아웃'
@@ -109,3 +124,18 @@ def modify_user_info(user: UserRequest, db: Session = Depends(get_db)) -> UserRe
     :return: 수정후 회원 정보
     """
     return modify_user(db, user)
+
+
+@private_router.get('/me',
+                    response_model=UserResponse,
+                    status_code=status.HTTP_200_OK,
+                    summary='내 정보 조회'
+                    )
+def get_my_info(login_id: str = Depends(get_current_users), db: Session = Depends(get_db)) -> UserResponse:
+    """
+    현재 로그인한 사용자 정보 조회
+    :param login_id: 현재 로그인 아이디
+    :param db: 세션
+    :return: 사용자 정보
+    """
+    return get_login_id(db, login_id)
