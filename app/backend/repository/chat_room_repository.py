@@ -22,15 +22,19 @@ def create_chat_room(db: Session, member_id: int, title: str, persona: str) -> C
     logger.info(f'대화방 생성 완료 : {chat_room.member_id}, {chat_room.title}, {chat_room.persona}')
     return chat_room
 
-def find_chat_room(db: Session, chat_room_id: int) -> Optional[ChatRoom]:
+def find_chat_room(db: Session, chat_room_id: int, login_id: str | None = None) -> Optional[ChatRoom]:
     """
     채팅방 단건 조회
     :param db: 세션
     :param chat_room_id: 대화방 PK
+    :param login_id: 로그인 아이디
     :return: 채팅방
     """
-    logger.info(f'단건 조회 요청 : {chat_room_id}')
-    chat_room = db.execute(select(ChatRoom).where(ChatRoom.id == chat_room_id)).scalar_one_or_none()
+    logger.info(f'단건 조회 요청 : room_id={chat_room_id}, login_id={login_id}')
+    query = select(ChatRoom).where(ChatRoom.id == chat_room_id)
+    if login_id:
+        query = query.join(ChatRoom.users).where(ChatRoom.users.has(login_id=login_id))
+    chat_room = db.execute(query).scalar_one_or_none()
 
     if not chat_room:
         logger.warning('조회 대화방 없음')
@@ -39,32 +43,45 @@ def find_chat_room(db: Session, chat_room_id: int) -> Optional[ChatRoom]:
     logger.info(f'대화방 단건 조회 : {chat_room.member_id}, {chat_room.title}, {chat_room.persona}')
     return chat_room
 
-def list_chat_rooms(db: Session, offset: int, limit: int) -> list[ChatRoom]:
+def list_chat_rooms(db: Session, offset: int, limit: int, login_id: str | None = None) -> list[ChatRoom]:
     """
     채팅방 목록 조회
     :param db: 세션
     :param offset: 조회 시작 위치
     :param limit: 조회 건수
+    :param login_id: 로그인 아이디
     :return: 채팅방 목록
     """
-    logger.info('채팅방 목록 조회 요청')
-    chat_rooms = (
-        db.execute(
+    logger.info(f'채팅방 목록 조회 요청 : login_id={login_id}')
+    query = select(ChatRoom).order_by(ChatRoom.id.asc()).offset(offset).limit(limit)
+    if login_id:
+        query = (
             select(ChatRoom)
+            .join(ChatRoom.users)
+            .where(ChatRoom.users.has(login_id=login_id))
             .order_by(ChatRoom.id.asc())
             .offset(offset)
             .limit(limit)
-        ).scalars().all())
-    logger.info(f'채팅방 목록 조회 완료 - count: {len(chat_rooms)}')
+        )
+    chat_rooms = db.execute(query).scalars().all()
+    logger.info(f'채팅방 목록 조회 완료 - login_id={login_id}, count: {len(chat_rooms)}')
     return list(chat_rooms)
 
-def count_chat_rooms(db: Session) -> int:
+def count_chat_rooms(db: Session, login_id: str | None = None) -> int:
     """
     채팅방 전체 건수 카운트(페이징)
     :param db: 세션
+    :param login_id: 로그인 아이디
     :return: 전체 건수
     """
-    return db.execute(select(func.count()).select_from(ChatRoom)).scalar_one()
+    query = select(func.count()).select_from(ChatRoom)
+    if login_id:
+        query = (
+            select(func.count(ChatRoom.id))
+            .join(ChatRoom.users)
+            .where(ChatRoom.users.has(login_id=login_id))
+        )
+    return db.execute(query).scalar_one()
 
 def update_chat_room(db: Session, chat_room_id: int, chat_room: ChatRoom) -> Optional[ChatRoom]:
     """

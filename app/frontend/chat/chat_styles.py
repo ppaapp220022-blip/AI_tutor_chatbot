@@ -1,7 +1,7 @@
 import streamlit as st
 
 
-# 채팅 화면 전체에서 공통으로 쓰는 Streamlit 커스텀 스타일 모음이다.
+# 채팅 화면 전체에서 공통으로 쓰는 Streamlit 커스텀 스타일
 CHAT_PAGE_STYLES = """
 <style>
 [data-testid="stSidebarNav"] { display: none; }
@@ -108,56 +108,77 @@ div.stButton > button:hover {
     margin-bottom: 0;
 }
 .st-key-chat-composer [data-testid="stFileUploader"] {
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     margin-top: 0;
     margin-bottom: 0;
 }
-.st-key-chat-composer [data-testid="stFileUploader"] {
-    width: max-content;
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: flex-start;
-}
 .st-key-chat-composer [data-testid="stFileUploader"] section {
     min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 0;
     border: none;
+    border-radius: 12px;
     background: transparent;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: stretch;
     box-shadow: none;
 }
 .st-key-chat-composer [data-testid="stFileUploader"] button {
-    min-height: 38px;
+    min-height: 40px;
+    width: 100%;
+    min-width: 0;
     border-radius: 12px;
     border: 1px solid #d8def0;
-    background: #f8faff;
+    background: #ffffff;
     color: #344054;
     font-weight: 600;
-    padding: 0 12px;
+    padding: 0 14px;
+    justify-content: center;
+    box-sizing: border-box;
     white-space: nowrap;
 }
 .st-key-chat-composer [data-testid="stFileUploader"] button:hover {
     border-color: #89b4fa;
     background: #eef4ff;
 }
-.st-key-chat-composer .stFileUploaderFile,
-.st-key-chat-composer [data-testid="stFileUploaderPagination"],
-.st-key-chat-composer [data-testid="stFileUploaderFile"],
-.st-key-chat-composer [data-testid="stFileUploaderFileName"],
-.st-key-chat-composer [data-testid="stFileUploaderDeleteBtn"],
-.st-key-chat-composer [data-testid="stFileUploaderFileList"] {
-    display: none;
-}
 .st-key-chat-composer [data-testid="stFileUploaderDropzoneInstructions"] {
     display: none;
 }
-.st-key-chat-composer [data-testid="stBaseButton-secondary"] {
-    width: 48px;
-    min-width: 48px;
+.st-key-chat-composer [data-testid="stFileUploaderFile"] {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploaderFileData"] {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploaderFileName"] {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploaderDeleteBtn"] {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploaderFileList"] {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploader"] small,
+.st-key-chat-composer [data-testid="stFileUploader"] ul,
+.st-key-chat-composer [data-testid="stFileUploader"] li,
+.st-key-chat-composer [data-testid="stFileUploader"] svg:not(button svg) {
+    display: none !important;
+}
+.st-key-chat-composer [data-testid="stFileUploader"] p {
+    margin: 0;
     padding: 0;
-    justify-content: center;
+}
+.st-key-chat-composer [data-testid="stBaseButton-secondary"] {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 14px;
 }
 .st-key-chat-composer [data-testid="stTextInput"] {
     margin-top: 0;
@@ -196,15 +217,31 @@ div.stButton > button:hover {
     filter: none;
 }
 .composer-file-name {
-    margin-top: 6px;
-    margin-left: 6px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #d8def0;
+    border-radius: 12px;
+    background: #f8faff;
     font-size: 12px;
     color: #667085;
     text-align: left;
 }
+.composer-file-label {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: #475467;
+}
+.composer-file-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 </style>
 """
-
 
 def apply_chat_styles() -> None:
     # 채팅 페이지 진입 시 한 번만 전역 스타일을 주입한다.

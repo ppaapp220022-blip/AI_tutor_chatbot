@@ -1,35 +1,9 @@
-import os
 from typing import Any
 
-import requests
+from app.frontend.api.http_client import FrontendApiError, request_api
 
-API_BASE_URL = os.getenv("BACKEND_API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 ROOM_PAGE_SIZE = 5
 MESSAGE_PAGE_SIZE = 5
-
-class FrontendApiError(Exception):
-    # 백엔드 호출 실패를 화면 친화적인 메시지로 전달하는 예외다.
-    """Represent a frontend-friendly error raised while calling the backend API."""
-
-    def __init__(self, message: str):
-        super().__init__(message)
-        self.message = message
-
-
-def _extract_error_message(response: requests.Response) -> str:
-    # 백엔드 응답 본문에서 사용자에게 보여줄 오류 문구를 추출한다.
-    """Extract a readable error message from a failed backend response."""
-    try:
-        payload = response.json()
-    except ValueError:
-        return response.text or "요청 처리 중 오류가 발생했습니다."
-
-    if isinstance(payload, dict):
-        for key in ("message", "detail", "error"):
-            value = payload.get(key)
-            if isinstance(value, str) and value.strip():
-                return value
-    return str(payload)
 
 
 def _request_api(
@@ -41,27 +15,15 @@ def _request_api(
     data: dict[str, Any] | None = None,
     files: dict[str, Any] | None = None,
 ) -> Any:
-    # 공통 HTTP 요청을 보내고 네트워크/상태 코드 오류를 일관되게 처리한다.
-    """Send a backend request and normalize connection or HTTP failures."""
-    try:
-        response = requests.request(
-            method=method,
-            url=f"{API_BASE_URL}{path}",
-            params=params,
-            json=json,
-            data=data,
-            files=files,
-            timeout=30,
-        )
-    except requests.RequestException as exc:
-        raise FrontendApiError(f"백엔드 연결 실패: {exc}") from exc
-
-    if response.status_code >= 400:
-        raise FrontendApiError(_extract_error_message(response))
-
-    if response.status_code == 204 or not response.content:
-        return None
-    return response.json()
+    # 공통 HTTP 요청을 보내고 네트워크/상태 코드 오류를 일관되게 처리
+    return request_api(
+        method,
+        path,
+        params=params,
+        json=json,
+        data=data,
+        files=files,
+    )
 
 
 def _normalize_role(role: Any) -> str:

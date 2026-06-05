@@ -17,7 +17,14 @@ from app.backend.schema.base_schema import PaginationRequest
 UPLOAD_DIR = Path("uploads")
 
 # 파일 업로드 저장소 생성
-def post_uploaded_files_service(db, room_id: int, file_name: str, file_path: str, commit: bool = True):
+def post_uploaded_files_service(
+    db,
+    room_id: int,
+    file_name: str,
+    file_path: str,
+    commit: bool = True,
+    login_id: str | None = None,
+):
     """
     업로드 파일 메타데이터 생성 서비스
     :param db: 세션
@@ -25,12 +32,13 @@ def post_uploaded_files_service(db, room_id: int, file_name: str, file_path: str
     :param file_name: 파일명
     :param file_path: 파일 경로
     :param commit: db 업로드 여부
+    :param login_id: 로그인 아이디
     :return: 생성된 업로드 파일 정보
     """
     if not room_id:
         raise BadRequestException("채팅방을 확인 할 수 없습니다.")
 
-    room = find_chat_room(db, room_id)
+    room = find_chat_room(db, room_id, login_id=login_id)
     if not room:
         raise NotFoundException("채팅방이 존재하지 않습니다.")
 
@@ -46,19 +54,20 @@ def post_uploaded_files_service(db, room_id: int, file_name: str, file_path: str
         db.rollback()
         raise DatabaseException("업로드 파일 정보 저장 중 데이터베이스 오류가 발생했습니다.")
 
-def save_upload_file_service(db, room_id: int, upload_file, commit: bool = True):
+def save_upload_file_service(db, room_id: int, upload_file, commit: bool = True, login_id: str | None = None):
     """
     업로드 파일 저장 서비스
     :param db: 세션
     :param room_id: 대화방 PK
     :param upload_file: 업로드 파일
     :param commit: db 업로드
+    :param login_id: 로그인 아이디
     :return: 저장된 업로드 파일 정보
     """
     if not room_id:
         raise BadRequestException("채팅방을 확인할 수 없습니다.")
 
-    room = find_chat_room(db, room_id)
+    room = find_chat_room(db, room_id, login_id=login_id)
     if not room:
         raise NotFoundException("채팅방이 존재하지 않습니다.")
 
@@ -89,6 +98,7 @@ def save_upload_file_service(db, room_id: int, upload_file, commit: bool = True)
             file_name=original_name,
             file_path=str(stored_path),
             commit=commit,
+            login_id=login_id,
         )
         return uploaded
     except Exception:
@@ -97,15 +107,16 @@ def save_upload_file_service(db, room_id: int, upload_file, commit: bool = True)
         raise
 
 # 파일 업로드 목록
-def get_all_uploaded_files_service(db, room_id: int, pagination: PaginationRequest):
+def get_all_uploaded_files_service(db, room_id: int, pagination: PaginationRequest, login_id: str | None = None):
     """
     업로드 파일 목록 조회 서비스
     :param db: 세션
     :param room_id: 대화방 PK
     :param pagination: 페이징 정보
+    :param login_id: 로그인 아이디
     :return: 업로드 파일 목록
     """
-    room = find_chat_room(db, room_id)
+    room = find_chat_room(db, room_id, login_id=login_id)
     if not room:
         raise NotFoundException("채팅방이 존재하지 않습니다.")
 

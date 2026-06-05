@@ -37,15 +37,16 @@ def post_chat_room_service(db, member_id: int, title: str, persona: str):
         raise DatabaseException("채팅방 생성 중 데이터베이스 오류가 발생했습니다.")
 
 # 채팅방 목록
-def get_all_chat_room_service(db, pagination: PaginationRequest):
+def get_all_chat_room_service(db, pagination: PaginationRequest, login_id: str | None = None):
     """
     채팅방 목록 조회 서비스
     :param db: 세션
     :param pagination: 페이징 정보
+    :param login_id: 로그인 아이디
     :return: 채팅방 목록
     """
-    total = count_chat_rooms(db)
-    items = list_chat_rooms(db, pagination.offset, pagination.size)
+    total = count_chat_rooms(db, login_id=login_id)
+    items = list_chat_rooms(db, pagination.offset, pagination.size, login_id=login_id)
     return {
         "items": items,
         "total": total,
@@ -54,29 +55,35 @@ def get_all_chat_room_service(db, pagination: PaginationRequest):
     }
 
 # 채팅방 검색
-def get_chat_room_service(db, room_id: int):
+def get_chat_room_service(db, room_id: int, login_id: str | None = None):
     """
     채팅방 단건 조회 서비스
     :param db: 세션
     :param room_id: 대화방 PK
+    :param login_id: 로그인 아이디
     :return: 조회된 채팅방
     """
-    room = find_chat_room(db, room_id)
+    room = find_chat_room(db, room_id, login_id=login_id)
 
     if not room:
         raise NotFoundException("채팅방이 존재하지 않습니다.")
     return room
 
 # 채팅방 수정
-def patch_chat_room_service(db, room_id: int, chat_room: ChatRoom):
+def patch_chat_room_service(db, room_id: int, chat_room: ChatRoom, login_id: str | None = None):
     """
     채팅방 수정 서비스
     :param db: 세션
     :param room_id: 대화방 PK
     :param chat_room: 수정할 채팅방
+    :param login_id: 로그인 아이디
     :return: 수정된 채팅방
     """
     try:
+        owned_room = find_chat_room(db, room_id, login_id=login_id)
+        if not owned_room:
+            raise NotFoundException("채팅방이 존재하지 않습니다.")
+
         room = update_chat_room(db, room_id, chat_room)
 
         if not room:
@@ -93,15 +100,16 @@ def patch_chat_room_service(db, room_id: int, chat_room: ChatRoom):
         raise DatabaseException("채팅방 수정 중 데이터베이스 오류가 발생했습니다.")
 
 # 채팅방 삭제
-def delete_chat_room_service(db, room_id: int):
+def delete_chat_room_service(db, room_id: int, login_id: str | None = None):
     """
     채팅방 삭제 서비스
     :param db: 세션
     :param room_id: 대화방 PK
+    :param login_id: 로그인 아이디
     :return: 삭제 여부
     """
     try:
-        room = find_chat_room(db, room_id)
+        room = find_chat_room(db, room_id, login_id=login_id)
 
         if not room:
             raise NotFoundException("삭제할 채팅방이 없습니다.")

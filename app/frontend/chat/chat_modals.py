@@ -8,8 +8,7 @@ from .chat_state import get_member_id_for_new_room, load_chat_rooms, load_messag
 
 @st.dialog("새 채팅방 만들기")
 def create_room_modal(personas: list[str]) -> None:
-    # 새 채팅방 생성에 필요한 입력값을 받고 생성 후 목록/메시지를 갱신한다.
-    """Render the create-room modal and create a room when the form is submitted."""
+    # 새 채팅방 생성에 필요한 입력값을 받고 생성 후 목록/메시지를 갱신
     room_title = st.text_input("채팅방 이름", placeholder="채팅방 이름을 입력하세요")
     persona = st.selectbox("페르소나 선택", personas)
     default_member_id = get_member_id_for_new_room() or 1
@@ -50,8 +49,7 @@ def create_room_modal(personas: list[str]) -> None:
 
 @st.dialog("채팅방 나가기")
 def leave_room_modal(room: dict[str, Any]) -> None:
-    # 채팅방 삭제 여부를 확인하고 확정 시 현재 상태까지 함께 정리한다.
-    """Render the delete-room modal and remove the selected room on confirmation."""
+    # 채팅방 삭제 여부를 확인하고 확정 시 현재 상태까지 함께 정리
     st.markdown(
         f"""
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">

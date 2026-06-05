@@ -7,8 +7,7 @@ from .chat_state import get_total_room_pages, go_to_home, load_messages
 
 
 def render_sidebar(personas: list[str]) -> None:
-    # 공통 사이드바를 렌더링하고 채팅방 목록과 계정 액션을 노출한다.
-    """Render the left sidebar with room shortcuts, room pagination, and session actions."""
+    # 공통 사이드바를 렌더링하고 채팅방 목록과 계정 액션을 노출
     with st.sidebar:
         st.markdown(
             f"""
@@ -42,8 +41,7 @@ def render_sidebar(personas: list[str]) -> None:
 
 
 def _render_sidebar_room_buttons() -> None:
-    # 현재 페이지에 속한 채팅방 버튼과 삭제 버튼을 그린다.
-    """Render room selection and delete buttons for the current room page."""
+    # 현재 페이지에 속한 채팅방 버튼과 삭제 버튼을 노출 시킨다.
     for room in st.session_state["chat_rooms"]:
         col1, col2 = st.columns([4, 1])
         with col1:
@@ -67,8 +65,7 @@ def _render_sidebar_room_buttons() -> None:
 
 
 def _render_sidebar_pager() -> None:
-    # 사이드바 하단에 채팅방 이전/다음 페이지 이동 버튼을 그린다.
-    """Render previous/next room-page controls inside the sidebar."""
+    # 사이드바 하단에 채팅방 이전/다음 페이지 이동 버튼
     total_room_pages = get_total_room_pages()
     st.markdown('<div class="sidebar-pager">', unsafe_allow_html=True)
     prev_col, next_col = st.columns(2)
@@ -98,8 +95,7 @@ def _render_sidebar_pager() -> None:
 
 
 def _render_sidebar_actions(personas: list[str]) -> None:
-    # 관리자 이동과 로그아웃처럼 계정 성격의 액션 버튼을 렌더링한다.
-    """Render sidebar navigation actions such as admin, logout, and room creation shortcuts."""
+    # 관리자 이동과 로그아웃처럼 계정 성격의 액션 버튼을 렌더링
     if st.session_state.get("role") == "ADMIN":
         if st.button("관리자 페이지", use_container_width=True):
             st.switch_page("pages/admin.py")
@@ -112,8 +108,7 @@ def _render_sidebar_actions(personas: list[str]) -> None:
 
 
 def render_lobby_view(personas: list[str]) -> None:
-    # 채팅방 입장 전 메인 로비 화면과 카드형 채팅방 목록을 렌더링한다.
-    """Render the chat-room selection screen shown before a room is opened."""
+    # 채팅방 입장 전 메인 로비 화면과 카드형 채팅방 목록을 렌더링한
     if not st.session_state["chat_rooms"]:
         _render_empty_lobby(personas)
         return
@@ -175,8 +170,7 @@ def render_lobby_view(personas: list[str]) -> None:
 
 
 def _render_empty_lobby(personas: list[str]) -> None:
-    # 채팅방이 하나도 없을 때 비어 있는 로비 상태 화면을 보여준다.
-    """Render the empty lobby state when there are no rooms on the current account."""
+    # 채팅방이 하나도 없을 때 비어 있는 로비 상태 화면을 출력
     st.markdown("<br>" * 3, unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -198,8 +192,7 @@ def _render_empty_lobby(personas: list[str]) -> None:
 
 
 def render_room_view(personas: list[str]) -> None:
-    # 현재 선택된 채팅방의 헤더, 메시지 목록, 입력창을 렌더링한다.
-    """Render the active chat room, including messages, controls, and composer."""
+    # 현재 선택된 채팅방의 헤더, 메시지 목록, 입력창을 렌더링
     room = st.session_state["current_room"]
     if room is None:
         return
@@ -240,8 +233,7 @@ def render_room_view(personas: list[str]) -> None:
 
 
 def _render_messages() -> None:
-    # 세션에 적재된 메시지를 순서대로 채팅 UI에 출력한다.
-    """Render the current room message list in the chat area."""
+    # 세션에 적재된 메시지를 순서대로 채팅 UI에 출력
     for message in st.session_state["messages"]:
         with st.chat_message(message["role"]):
             st.write(message["content"])

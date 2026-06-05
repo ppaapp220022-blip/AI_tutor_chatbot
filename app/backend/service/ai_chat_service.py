@@ -27,12 +27,41 @@ from app.backend.service.messages_service import (
 )
 from app.backend.service.uploaded_files_service import save_upload_file_service
 
-SYSTEM_PROMPT = (
+DEFAULT_PERSONA = "일반 튜터"
+
+BASE_SYSTEM_PROMPT = (
     "당신은 업로드된 PDF 문서와 대화 문맥을 바탕으로 답변하는 AI 튜터입니다. "
     "당신은 전문적인 지식을 사용자가 이해하기 쉽게 설명해야 하고, "
-    "사용자가 원하는 지식을 습득하기 위해 최선의 노력을 해야합니다."
+    "사용자가 원하는 지식을 습득하기 위해 최선의 노력을 해야합니다. "
     "필요하다면 추가적인 질문을 계속 사용자에게 요구하세요."
 )
+
+PERSONA_PROMPT_MAP: dict[str, str] = {
+    DEFAULT_PERSONA: (
+        f"{BASE_SYSTEM_PROMPT} "
+        "특정 과목에 치우치지 말고, 학습자의 수준을 먼저 파악한 뒤 차분하고 균형 있게 설명하세요."
+    ),
+    "수학 전문가": (
+        f"{BASE_SYSTEM_PROMPT} "
+        "수학 개념, 공식, 풀이 과정을 단계별로 설명하고 계산 근거를 분명히 제시하세요. "
+        "정답만 주지 말고 왜 그런 풀이를 선택했는지 함께 설명하세요."
+    ),
+    "영어 전문가": (
+        f"{BASE_SYSTEM_PROMPT} "
+        "영어 문법, 어휘, 독해, 작문을 중심으로 설명하고 필요한 경우 예문과 자연스러운 표현을 함께 제시하세요. "
+        "틀린 표현은 부드럽게 교정하고, 한국어 설명과 영어 예문을 균형 있게 사용하세요."
+    ),
+    "과학 전문가": (
+        f"{BASE_SYSTEM_PROMPT} "
+        "과학 개념과 현상을 원리 중심으로 설명하고, 실생활 예시와 함께 오개념을 바로잡아 주세요. "
+        "과정과 인과관계를 분명하게 풀어 설명하세요."
+    ),
+    "역사 전문가": (
+        f"{BASE_SYSTEM_PROMPT} "
+        "역사적 사건의 배경, 전개, 결과를 시간 흐름에 맞춰 설명하고 주요 인물과 맥락을 함께 연결해 주세요. "
+        "단편 암기보다 흐름 이해를 돕는 방식으로 답변하세요."
+    ),
+}
 
 MAX_FILE_CONTEXT_LENGTH = 12000
 MAX_HISTORY_COUNT = 20
@@ -64,7 +93,27 @@ def _to_openai_role(role: Role) -> Literal["user", "assistant"]: # 반환값은 
         return "user"
     return "assistant"
 
-def build_openai_messages(history: list[Messages], user_message: str, file_text: str = "") -> list[ChatCompletionMessageParam]: # OpenAI에서 채팅타입을 명시 해줌
+def _build_system_prompt(persona: str | None) -> str:
+    """
+    채팅방 페르소나에 맞는 시스템 프롬프트를 생성
+    :param persona: 채팅방에 저장된 페르소나
+    :return: 시스템 프롬프트
+    """
+    normalized_persona = (persona or DEFAULT_PERSONA).strip() or DEFAULT_PERSONA
+    prompt = PERSONA_PROMPT_MAP.get(normalized_persona)
+    if prompt:
+        return prompt
+    return (
+        f"{PERSONA_PROMPT_MAP[DEFAULT_PERSONA]} "
+        f"현재 페르소나는 '{normalized_persona}'이며, 그 성격에 맞는 말투와 설명 방식을 최대한 반영하세요."
+    )
+
+def build_openai_messages(
+    history: list[Messages],
+    user_message: str,
+    file_text: str = "",
+    persona: str | None = None,
+) -> list[ChatCompletionMessageParam]: # OpenAI에서 채팅타입을 명시 해줌
     """
     OpenAI 요청용 메시지 배열 생성
     :param history: 기존 대화 이력
@@ -74,9 +123,11 @@ def build_openai_messages(history: list[Messages], user_message: str, file_text:
     """
     messages: list[ChatCompletionMessageParam] = []
 
+    system_prompt = _build_system_prompt(persona)
+
     system_message: ChatCompletionSystemMessageParam = {
         "role": "system",
-        "content": SYSTEM_PROMPT,
+        "content": system_prompt,
     }
     messages.append(system_message)
 
@@ -108,13 +159,20 @@ def build_openai_messages(history: list[Messages], user_message: str, file_text:
     messages.append(user_message_param)
     return messages
 
-def handle_chat_request_service(db, room_id: int, user_message: str, upload_file=None) -> dict:
+def handle_chat_request_service(
+    db,
+    room_id: int,
+    user_message: str,
+    upload_file=None,
+    login_id: str | None = None,
+) -> dict:
     """
     채팅 요청 처리 서비스
     :param db: 세션
     :param room_id: 대화방 PK
     :param user_message: 사용자 메시지
     :param upload_file: 업로드 파일
+    :param login_id: 로그인 아이디
     :return: AI 응답 결과
     """
     if not room_id:
@@ -123,7 +181,7 @@ def handle_chat_request_service(db, room_id: int, user_message: str, upload_file
     if not user_message or not user_message.strip():
         raise BadRequestException("사용자 메시지가 비어 있습니다.")
 
-    room = find_chat_room(db, room_id)
+    room = find_chat_room(db, room_id, login_id=login_id)
     if not room:
         raise NotFoundException("채팅방이 존재하지 않습니다.")
 
@@ -132,24 +190,24 @@ def handle_chat_request_service(db, room_id: int, user_message: str, upload_file
 
     try:
         if upload_file is not None:
-            uploaded = save_upload_file_service(db, room_id, upload_file, commit=False)
+            uploaded = save_upload_file_service(db, room_id, upload_file, commit=False, login_id=login_id)
             try:
                 file_text = extract_text_from_file(uploaded.file_path)
             except ValueError as exc:
                 raise BadRequestException(str(exc)) from exc
 
-        history = get_message_history_service(db, room_id, MAX_HISTORY_COUNT)
+        history = get_message_history_service(db, room_id, MAX_HISTORY_COUNT, login_id=login_id)
 
-        openai_messages = build_openai_messages(history, user_message.strip(), file_text)
+        openai_messages = build_openai_messages(history, user_message.strip(), file_text, room.persona)
 
-        post_messages_service(db, room_id, Role.USER, user_message.strip(), commit=False)
+        post_messages_service(db, room_id, Role.USER, user_message.strip(), commit=False, login_id=login_id)
 
         assistant_message = request_chat_completion(openai_messages)
 
         if not assistant_message:
             raise ExternalServiceException("AI 응답을 생성하지 못했습니다.")
 
-        post_messages_service(db, room_id, Role.Assistant, assistant_message, commit=False)
+        post_messages_service(db, room_id, Role.Assistant, assistant_message, commit=False, login_id=login_id)
         db.commit()
     except (BadRequestException, NotFoundException):
         db.rollback()
