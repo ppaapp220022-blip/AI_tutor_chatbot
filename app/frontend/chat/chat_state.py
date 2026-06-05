@@ -8,7 +8,7 @@ from .chat_api import FrontendApiError, fetch_all_messages, fetch_chat_rooms_pag
 def init_chat_session_state() -> None:
     # 채팅 화면이 사용하는 session_state 기본값을 한 번만 세팅한다.
     """Initialize every session_state key used by the chat page."""
-    defaults = {
+    defaults: dict[str, object] = {
         "chat_rooms": [],
         "current_room": None,
         "messages": [],

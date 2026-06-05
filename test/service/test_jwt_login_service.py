@@ -38,7 +38,7 @@ def test_login_not_found(db):
     request = make_login_request('없는유저')
 
     # when & then
-    with pytest.raises(ValueError, match='존재하지 않는 아이디입니다.'):
+    with pytest.raises(ValueError, match='아이디 또는 비밀번호가 틀렸습니다.'):
         login(db, request)
 
 
@@ -48,7 +48,7 @@ def test_login_wrong_password(db):
     request = make_login_request(password='wrong_password')
 
     # when & then
-    with pytest.raises(ValueError, match='비밀번호가 일치 하지 않습니다.'):
+    with pytest.raises(ValueError, match='아이디 또는 비밀번호가 틀렸습니다.'):
         login(db, request)
 
 

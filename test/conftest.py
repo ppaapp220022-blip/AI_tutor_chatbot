@@ -13,13 +13,13 @@ TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture
 def db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine, checkfirst=True)
     session = TestSessionLocal()
     try :
         yield session # 테스트 세션 전달
     finally:
         session.close()
-        Base.metadata.drop_all(bind=engine) # 테스트 끝나면 테이블 삭제
+        Base.metadata.drop_all(bind=engine, checkfirst=True) # 테스트 끝나면 테이블 삭제
 
 
 @pytest.fixture

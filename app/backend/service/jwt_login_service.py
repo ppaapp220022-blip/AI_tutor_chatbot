@@ -28,10 +28,10 @@ def login(db: Session, user: LoginRequest) -> dict:
     refresh_token = create_refresh_token(exist_user.login_id)
 
     # 리프레시토큰 레디스에 저장
-    redis_client.setex(
+    redis_client.set(
         f'refresh:{exist_user.login_id}',
-        60 * 60 * 24,
-        refresh_token
+        refresh_token,
+        ex=60 * 60 * 24,
     )
 
     logger.info(f'로그인 완료 : {exist_user.login_id}')

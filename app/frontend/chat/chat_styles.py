@@ -112,8 +112,14 @@ div.stButton > button:hover {
     margin-top: 0;
     margin-bottom: 0;
 }
+.st-key-chat-composer [data-testid="stFileUploader"] {
+    width: max-content;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+}
 .st-key-chat-composer [data-testid="stFileUploader"] section {
-    min-height: 56px;
+    min-height: 40px;
     padding: 0;
     border: none;
     background: transparent;
@@ -136,8 +142,22 @@ div.stButton > button:hover {
     border-color: #89b4fa;
     background: #eef4ff;
 }
+.st-key-chat-composer .stFileUploaderFile,
+.st-key-chat-composer [data-testid="stFileUploaderPagination"],
+.st-key-chat-composer [data-testid="stFileUploaderFile"],
+.st-key-chat-composer [data-testid="stFileUploaderFileName"],
+.st-key-chat-composer [data-testid="stFileUploaderDeleteBtn"],
+.st-key-chat-composer [data-testid="stFileUploaderFileList"] {
+    display: none;
+}
 .st-key-chat-composer [data-testid="stFileUploaderDropzoneInstructions"] {
     display: none;
+}
+.st-key-chat-composer [data-testid="stBaseButton-secondary"] {
+    width: 48px;
+    min-width: 48px;
+    padding: 0;
+    justify-content: center;
 }
 .st-key-chat-composer [data-testid="stTextInput"] {
     margin-top: 0;

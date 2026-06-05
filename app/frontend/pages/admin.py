@@ -1,4 +1,5 @@
 import streamlit as st
+from typing import Any
 
 from app.frontend.api.admin_api import fetch_member, fetch_member_chat_history, fetch_members, set_member_active
 from app.frontend.api.auth_api import logout_user
@@ -175,7 +176,7 @@ if st.session_state['selected_user'] is not None:
     if not history_items:
         st.info('채팅 이력이 없습니다')
     else:
-        grouped_rooms = {}
+        grouped_rooms: dict[tuple[int, str, str], list[dict[str, Any]]] = {}
         for item in history_items:
             room_key = (item['room_id'], item.get('title') or '제목 없는 채팅방', item.get('persona') or '일반 튜터')
             grouped_rooms.setdefault(room_key, []).append(item)
