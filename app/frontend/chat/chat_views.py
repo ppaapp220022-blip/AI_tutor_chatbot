@@ -1,6 +1,6 @@
 import streamlit as st
 
-from .chat_api import FrontendApiError
+from app.frontend.api.http_client import FrontendApiError
 from .chat_composer import render_chat_composer
 from .chat_modals import create_room_modal, leave_room_modal
 from .chat_state import get_total_room_pages, go_to_home, load_messages

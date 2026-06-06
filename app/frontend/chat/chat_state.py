@@ -2,7 +2,9 @@ from typing import Any
 
 import streamlit as st
 
-from .chat_api import FrontendApiError, fetch_all_messages, fetch_chat_rooms_page, send_ai_chat
+from app.frontend.api.http_client import FrontendApiError
+
+from .chat_api import fetch_all_messages, fetch_chat_rooms_page, send_ai_chat
 
 def init_chat_session_state() -> None:
     # 채팅 화면이 사용하는 session_state 기본값을 한 번만 세팅

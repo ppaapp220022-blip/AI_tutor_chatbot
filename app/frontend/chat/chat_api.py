@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.frontend.api.http_client import FrontendApiError, request_api
+from app.frontend.api.http_client import request_api
 
 ROOM_PAGE_SIZE = 5
 MESSAGE_PAGE_SIZE = 5

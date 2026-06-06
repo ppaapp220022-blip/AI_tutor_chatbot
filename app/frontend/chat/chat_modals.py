@@ -2,7 +2,9 @@ from typing import Any
 
 import streamlit as st
 
-from .chat_api import FrontendApiError, create_chat_room, delete_chat_room
+from app.frontend.api.http_client import FrontendApiError
+
+from .chat_api import create_chat_room, delete_chat_room
 from .chat_state import get_member_id_for_new_room, load_chat_rooms, load_messages
 
 

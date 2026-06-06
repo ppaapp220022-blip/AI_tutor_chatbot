@@ -1,6 +1,6 @@
 import streamlit as st
 
-from app.frontend.chat.chat_api import FrontendApiError
+from app.frontend.api.http_client import FrontendApiError
 from app.frontend.chat import init_chat_session_state, load_chat_rooms
 from app.frontend.chat import apply_chat_styles
 from app.frontend.chat import render_lobby_view, render_room_view, render_sidebar
