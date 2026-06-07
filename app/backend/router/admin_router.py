@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.backend.database import get_db
-from app.backend.dependencies import get_current_users
+from app.backend.dependencies import get_current_admin
 from app.backend.schema.users_schema import (
     UsersActiveRequest,
     UserResponse,
@@ -20,7 +20,7 @@ from app.backend.service.user_service import (
 admin_router = APIRouter(
     prefix='/admin',
     tags=['admin'],
-    dependencies=[Depends(get_current_users)]  # = Java - @RequestMapping()
+    dependencies=[Depends(get_current_admin)]  # 관리자 권한 검증
 )
 
 

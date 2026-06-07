@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Cookie
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.responses import JSONResponse
@@ -9,8 +9,8 @@ from app.backend.schema.users_schema import (
     UserRequest, UserResponse, LoginRequest, LoginResponse,
     OtpRequest, OtpVerifyRequest
 )
-from app.backend.service.user_service import (send_otp_code, vacillation_otp, add_user, modify_user, get_login_id)
-from app.backend.service.jwt_login_service import login, logout, refresh_access_token
+from app.backend.service.user_service import (send_otp_code, vacillation_otp, add_user, modify_user, get_login_id, remove_user)
+from app.backend.service.jwt_login_service import login
 
 public_router = APIRouter(prefix='/users', tags=['users'])  # = Java - @RequestMapping()
 private_router = APIRouter(prefix='/users', tags=['users'], dependencies=[Depends(get_current_users)])  # = Java - @RequestMapping()
@@ -89,28 +89,6 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)) -> JSONResp
     return response
 
 
-@public_router.post('/refresh',
-                    response_model=LoginResponse,
-                    status_code=status.HTTP_200_OK,
-                    summary='엑세스 토큰 재발급'
-                    )
-def refresh_token(refresh_token: str | None = Cookie(default=None)) -> dict:
-    """
-    리프레시 토큰으로 엑세스 토큰 재발급
-    :param refresh_token: 쿠키의 리프레시 토큰
-    :return: 새 엑세스토큰
-    """
-    result = refresh_access_token(refresh_token or '')
-    return result
-
-@private_router.post('/logout',
-                    status_code=status.HTTP_204_NO_CONTENT,
-                    summary='로그아웃'
-                    )
-def logout_user(login_id: str = Depends(get_current_users)):
-    logout(login_id)
-
-
 @private_router.put('/modify',
                     response_model=UserResponse,
                     status_code=status.HTTP_200_OK,
@@ -139,3 +117,16 @@ def get_my_info(login_id: str = Depends(get_current_users), db: Session = Depend
     :return: 사용자 정보
     """
     return get_login_id(db, login_id)
+
+
+@private_router.delete('/withdraw',
+                       status_code=status.HTTP_204_NO_CONTENT,
+                       summary='회원 탈퇴'
+                       )
+def withdraw(login_id: str = Depends(get_current_users), db: Session = Depends(get_db)) -> None:
+    """
+    회원 탈퇴
+    :param login_id: 토큰에서 추출한 로그인 아이디
+    :param db: 세션
+    """
+    remove_user(db, login_id)

@@ -49,7 +49,7 @@ def find_user_all(db: Session, skip: int = 0, limit: int = 10) -> tuple[list[Use
     :return: 회원 목록, 전체 수
     """
     total = db.execute(
-        select(func.count()).where(Users.role == Role.USER)
+        select(func.count()).select_from(Users).where(Users.role == Role.USER)
     ).scalar_one()
 
     users = db.execute(
@@ -128,7 +128,7 @@ def find_users_by_chat_message(db: Session, login_id: str, skip: int = 0, limit:
     return list(items), total
 
 
-def update_user(db: Session, user: Users) -> Optional[Users]:
+def update_user(db: Session, user: Users) -> Users:
     """
     회원 정보 업데이트
     :param db: DB 세션
@@ -140,7 +140,7 @@ def update_user(db: Session, user: Users) -> Optional[Users]:
 
     if not exist_user:
         logger.warning('지정 회원 존재 하지 않음')
-        return None
+        raise ValueError('해당 회원이 존재하지 않습니다')
 
     if user.password:
         exist_user.password = user.password

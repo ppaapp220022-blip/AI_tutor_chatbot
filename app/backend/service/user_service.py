@@ -5,7 +5,7 @@ from app.backend.model import Users
 from sqlalchemy.orm import Session
 from app.backend.repository.user_repository import (
     create_users, find_user_id, update_user, update_users_active, find_users_by_ids_and_active, find_user_all,
-    find_users_by_chat_message
+    find_users_by_chat_message, delete_user
 )
 from app.backend.schema.users_schema import (
     UserRequest,
@@ -91,16 +91,18 @@ def modify_user(db: Session, user: UserRequest) -> UserResponse:
         logger.warning(f'존재하지 않는 회원 : {user.login_id}')
         raise ValueError(f'없는 회원 수정불가 : {user.login_id}')
 
-    if pwd_encoding.verify(user.password, exist_user.password):
-        logger.warning(f'현재 비밀번호와 겹침 : {user.login_id}')
-        raise ValueError('현재 비밀번호랑 겹침 변경 불가')
+    # 비밀번호 변경 여부 확인 - 빈 문자열이거나 동일하면 스킵
+    is_pw_changed = bool(user.password) and not pwd_encoding.verify(user.password, exist_user.password)
+    # 이메일 변경 여부 확인 - 빈 문자열이거나 동일하면 스킵
+    is_email_changed = bool(user.email) and exist_user.email != user.email
 
-    if exist_user.email == user.email:
-        logger.warning(f'현재 이메일과 동일 : {user.email}')
-        raise ValueError('현재 이메일과 동일함 변경 불가')
+    if not is_pw_changed and not is_email_changed:
+        raise ValueError('변경된 내용이 없습니다')
 
-    new_password = pwd_encoding.hash(user.password)
-    update_data = Users(login_id=user.login_id, password=new_password, email=user.email)
+    new_password = pwd_encoding.hash(user.password) if is_pw_changed else exist_user.password
+    new_email = user.email if is_email_changed else exist_user.email
+
+    update_data = Users(login_id=user.login_id, password=new_password, email=new_email)
     updated = update_user(db, update_data)
     logger.info(f'회원 정보 수정 완료 : {UserResponse.model_validate(updated)}')
     return UserResponse.model_validate(updated)
@@ -159,6 +161,19 @@ def get_login_id(db: Session, login_id: str) -> UserResponse:
     if not user:
         raise ValueError('해당 유저 존재하지 않음')
     return UserResponse.model_validate(user)
+
+
+def remove_user(db: Session, login_id: str) -> None:
+    """
+    회원 탈퇴
+    :param db: 세션
+    :param login_id: 로그인 아이디
+    """
+    logger.info(f'회원 탈퇴 요청 : {login_id}')
+    result = delete_user(db, login_id)
+    if not result:
+        raise ValueError('해당 유저 존재하지 않음')
+    logger.info(f'회원 탈퇴 완료 : {login_id}')
 
 
 def get_user_chat_history(db: Session, login_id: str, page: int = 1, size: int = 10) -> UserChatHistoryPageResponse:

@@ -101,6 +101,10 @@ def _render_sidebar_actions(personas: list[str]) -> None:
             st.switch_page("pages/admin.py")
         st.write("")
 
+    if st.button("마이페이지", use_container_width=True):
+        st.switch_page("pages/mypage.py")
+    st.write("")
+
     if st.button("로그아웃", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
