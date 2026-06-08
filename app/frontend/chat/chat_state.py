@@ -4,7 +4,7 @@ import streamlit as st
 
 from app.frontend.api.http_client import FrontendApiError
 
-from .chat_api import fetch_all_messages, fetch_chat_rooms_page, send_ai_chat
+from .chat_api import fetch_all_messages, fetch_chat_rooms_page, fetch_personas, send_ai_chat
 
 def init_chat_session_state() -> None:
     # 채팅 화면이 사용하는 session_state 기본값을 한 번만 세팅
@@ -12,6 +12,7 @@ def init_chat_session_state() -> None:
         "chat_rooms": [],
         "current_room": None,
         "messages": [],
+        "personas": [],
         "file_uploader_key": 0,
         "room_page": 1,
         "room_total": 0,
@@ -43,6 +44,13 @@ def load_chat_rooms(select_room_id: int | None = None) -> None:
     refreshed_room = next((room for room in rooms if room["id"] == current_room["id"]), None)
     if refreshed_room is not None:
         st.session_state["current_room"] = refreshed_room
+
+
+def load_personas() -> list[str]:
+    # 현재 기준의 페르소나 목록을 세션에 반영한다.
+    personas = fetch_personas()
+    st.session_state["personas"] = personas
+    return personas
 
 
 def _select_room_from_any_page(select_room_id: int, current_page_rooms: list[dict[str, Any]]) -> None:

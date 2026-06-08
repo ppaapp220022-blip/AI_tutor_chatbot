@@ -20,6 +20,7 @@ from app.backend.service.chat_room_service import (
     patch_chat_room_service,
     post_chat_room_service,
 )
+from app.backend.service.ai_chat_service import get_available_personas
 
 router = APIRouter(
     prefix="/chat-rooms",
@@ -67,6 +68,19 @@ def get_all_chat_rooms(
     :return: 채팅방 목록
     """
     return get_all_chat_room_service(db, pagination, login_id=login_id)
+
+
+@router.get("/personas",
+            response_model=list[str],
+            summary="페르소나 목록 조회",
+            description="채팅방 생성 시 사용할 수 있는 페르소나 목록을 조회합니다."
+            )
+def get_chat_room_personas():
+    """
+    페르소나 목록 조회 API
+    :return: 사용 가능한 페르소나 목록
+    """
+    return get_available_personas()
 
 @router.get("/{room_id}",
             response_model=ChatRoomResponse,

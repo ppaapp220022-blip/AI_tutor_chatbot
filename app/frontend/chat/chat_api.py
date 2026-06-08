@@ -44,7 +44,7 @@ def _normalize_room(room: dict[str, Any]) -> dict[str, Any]:
         "id": room["id"],
         "member_id": room.get("member_id"),
         "title": room.get("title") or "제목 없는 채팅방",
-        "persona": room.get("persona") or "일반 튜터",
+        "persona": room.get("persona") or "",
         "created_at": room.get("created_at"),
     }
 
@@ -84,6 +84,15 @@ def fetch_chat_rooms_page(page: int = 1) -> dict[str, Any]:
         "page": payload.get("page", page),
         "size": payload.get("size", ROOM_PAGE_SIZE),
     }
+
+
+def fetch_personas() -> list[str]:
+    # 현재 최신 페르소나 목록을 조회한다.
+    """Fetch the persona list from the backend source of truth."""
+    payload = _request_api("GET", "/chat-rooms/personas")
+    if not isinstance(payload, list):
+        return []
+    return [str(persona) for persona in payload if str(persona).strip()]
 
 
 def fetch_all_messages(room_id: int) -> list[dict[str, Any]]:

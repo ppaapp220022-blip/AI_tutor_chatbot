@@ -1,11 +1,9 @@
 import streamlit as st
 
 from app.frontend.api.http_client import FrontendApiError
-from app.frontend.chat import init_chat_session_state, load_chat_rooms
+from app.frontend.chat import init_chat_session_state, load_chat_rooms, load_personas
 from app.frontend.chat import apply_chat_styles
 from app.frontend.chat import render_lobby_view, render_room_view, render_sidebar
-
-PERSONAS = ["일반 튜터", "수학 전문가", "영어 전문가", "과학 전문가", "역사 전문가"]
 
 def main() -> None:
     # 채팅 페이지 메인
@@ -23,15 +21,20 @@ def main() -> None:
     init_chat_session_state()
 
     try:
+        load_personas()
         load_chat_rooms()
     except FrontendApiError as exc:
         st.error(exc.message)
 
-    render_sidebar(PERSONAS)
+    personas = st.session_state.get("personas", [])
+    if not personas:
+        st.warning("사용 가능한 페르소나 목록을 불러오지 못했습니다.")
+        st.stop()
+    render_sidebar(personas)
 
     if st.session_state["current_room"] is None:
-        render_lobby_view(PERSONAS)
+        render_lobby_view(personas)
     else:
-        render_room_view(PERSONAS)
+        render_room_view(personas)
 
 main()

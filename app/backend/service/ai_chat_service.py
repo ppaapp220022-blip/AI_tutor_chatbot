@@ -66,6 +66,14 @@ PERSONA_PROMPT_MAP: dict[str, str] = {
 MAX_FILE_CONTEXT_LENGTH = 12000
 MAX_HISTORY_COUNT = 20
 
+
+def get_available_personas() -> list[str]:
+    """
+    현재 페르소나 목록 반환
+    :return: 페르소나 이름 목록
+    """
+    return list(PERSONA_PROMPT_MAP.keys())
+
 def _cleanup_uploaded_file(uploaded) -> None:
     """
     업로드 실패 시 저장된 파일과 빈 부모 폴더를 정리
