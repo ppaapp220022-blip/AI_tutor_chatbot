@@ -43,11 +43,3 @@ def refresh_access_token(refresh_token: str) -> dict:
     access_token = create_access_token(login_id)
     logger.info(f'엑세스 토큰 재발급 완료 : {login_id}')
     return {'access_token': access_token, 'token_type': 'bearer'}
-
-
-def logout(login_id: str) -> None:
-    """
-    로그아웃
-    :param login_id: 현재 로그인 된 아이디
-    """
-    logger.info(f'로그아웃 완료 : {login_id}')
