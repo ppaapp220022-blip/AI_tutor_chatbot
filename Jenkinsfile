@@ -35,7 +35,8 @@ pipeline {
             steps {
                 sh '''
                     cd "$DEPLOY_DIR"
-                    git pull origin main
+                    git fetch origin main
+                    git reset --hard origin/main
                     docker compose build --pull
                 '''
             }
