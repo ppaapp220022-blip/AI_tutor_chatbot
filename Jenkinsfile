@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PROJECT_NAME = 'ai-tutor-chatbot'
+        COMPOSE_PROJECT_NAME = 'ai_tutor_chatbot'
         DEPLOY_DIR = '/opt/ai_tutor_chatbot'
     }
 
