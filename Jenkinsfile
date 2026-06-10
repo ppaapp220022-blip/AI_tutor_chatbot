@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         COMPOSE_PROJECT_NAME = 'ai-tutor-chatbot'
+        DEPLOY_DIR = '/opt/ai_tutor_chatbot'
     }
 
     options {
@@ -20,6 +21,7 @@ pipeline {
         stage('Validate Environment') {
             steps {
                 sh '''
+                    cd "$DEPLOY_DIR"
                     test -f .env || {
                       echo ".env 파일이 없습니다. 서버에 운영용 .env를 먼저 배치하세요."
                       exit 1
@@ -31,13 +33,18 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh 'docker compose build --pull'
+                sh '''
+                    cd "$DEPLOY_DIR"
+                    git pull origin main
+                    docker compose build --pull
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
                 sh '''
+                    cd "$DEPLOY_DIR"
                     docker compose up -d
                     docker compose ps
                 '''
@@ -47,6 +54,7 @@ pipeline {
         stage('Post Deploy Check') {
             steps {
                 sh '''
+                    cd "$DEPLOY_DIR"
                     sleep 10
                     docker compose ps
                     docker compose logs backend --tail=50
@@ -57,10 +65,16 @@ pipeline {
 
     post {
         success {
-            sh 'docker image prune -f || true'
+            sh '''
+                cd "$DEPLOY_DIR"
+                docker image prune -f || true
+            '''
         }
         failure {
-            sh 'docker compose logs --tail=100 || true'
+            sh '''
+                cd "$DEPLOY_DIR"
+                docker compose logs --tail=100 || true
+            '''
         }
     }
 }
