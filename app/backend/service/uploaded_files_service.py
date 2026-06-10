@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError
@@ -14,7 +15,7 @@ from app.backend.repository.uploaded_files_repository import (
 from app.backend.repository.chat_room_repository import find_chat_room
 from app.backend.schema.base_schema import PaginationRequest
 
-UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
 
 # 파일 업로드 저장소 생성
 def post_uploaded_files_service(

@@ -1,0 +1,14 @@
+.git
+.idea
+.pytest_cache
+.uv-cache
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+logs
+uploads
+test
+AI_CHAT_SERVICE_GUIDE.md
